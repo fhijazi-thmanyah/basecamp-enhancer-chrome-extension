@@ -25,8 +25,8 @@ Content script (`content.js`, one IIFE) + toolbar popup (`popup.html`/`popup.js`
 
 ## Packaging / publishing
 
-- Icons are generated from `icon.svg` (source of truth) → `icons/icon{16,32,48,128}.png` via `for s in 16 32 48 128; do rsvg-convert -w $s -h $s icon.svg -o icons/icon$s.png; done`. Re-run after editing the SVG.
-- Build the Web Store upload zip (runtime files only, manifest at root): `zip -r basecamp-enhancer.zip manifest.json content.js popup.html popup.js styles.css icons/ -x '*.DS_Store'`. Excludes `README.md`/`CLAUDE.md`/`icon.svg`/docs.
+- Icons: `icon.png` (512², source of truth) = the Basecamp logo-mark with the orange Basecamp app-icon composited as a rounded badge (soft shadow) in the bottom-right. Downscale to the four sizes with `for s in 16 32 48 128; do magick icon.png -filter Lanczos -resize ${s}x${s} -strip icons/icon$s.png; done`. Re-run after editing `icon.png`.
+- Build the Web Store upload zip (runtime files only, manifest at root): `zip -r basecamp-enhancer.zip manifest.json content.js popup.html popup.js styles.css icons/ -x '*.DS_Store'`. Excludes `README.md`/`CLAUDE.md`/`icon.png`/docs.
 - Bump `version` in `manifest.json` for every Web Store re-upload (it rejects duplicate versions). Distribution: Chrome Web Store, **Unlisted**.
 
 ## Testing

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Basecamp Enhancer",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Relative '(X ago)' timestamps, RTL text fix, and one-click inline emoji reactions on Basecamp. Toggle each feature from the toolbar.",
   "permissions": ["storage"],
   "icons": {
