@@ -1,13 +1,21 @@
 // Basecamp Enhancer — content script
 // 1. Append a "(X ago)" relative-time label to <time> elements.
 // 2. Fix RTL: auto-detect text direction on content + input fields.
-// Both features are individually toggleable from the toolbar popup and are
-// applied/reverted live via chrome.storage; with both off it's normal Basecamp.
+// 3. Inline reactions: a row of quick-boost emoji on every reactable item,
+//    so you react in one click without opening the "…" menu.
+// All features are individually toggleable from the toolbar popup and are
+// applied/reverted live via chrome.storage; with all off it's normal Basecamp.
 
 (() => {
   "use strict";
 
-  const DEFAULTS = { timeLabels: true, rtl: true };
+  const DEFAULT_EMOJIS = ["👍", "👏", "🙌", "❤️", "😂", "😊", "🎉", "🚀"];
+  const DEFAULTS = {
+    timeLabels: true,
+    rtl: true,
+    inlineReactions: true,
+    reactionEmojis: DEFAULT_EMOJIS,
+  };
   let settings = { ...DEFAULTS };
 
   const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "always" });
@@ -139,6 +147,109 @@
     });
   }
 
+  // ---- Feature 3: inline reactions (quick boosts) -----------------------
+
+  // Every reactable Basecamp item (card, comment, message, chat line, ping)
+  // renders a `.boosts` container holding a `.boosts__new-boost` "+" link whose
+  // href encodes the record's boostable_gid. That single, uniform anchor is all
+  // we need to post a boost — no "…" menu, no popover.
+
+  // Derive the POST endpoint + gid from the "+" link's href. The href is
+  //   /<acct>/buckets/<bucket>/boosts/new?boost[boostable_gid]=<base64 gid>
+  // so the create endpoint is the same path without "/new", and the gid is the
+  // base64-decoded query param. Returns null when the container isn't ready.
+  function boostTarget(container) {
+    const link = container.querySelector(".boosts__new-boost");
+    if (!link) return null;
+    const url = new URL(link.href);
+    const encoded = url.searchParams.get("boost[boostable_gid]");
+    if (!encoded) return null;
+    return { postUrl: url.pathname.replace(/\/new$/, ""), gid: atob(encoded) };
+  }
+
+  function injectReactionBar(container) {
+    // Skip Basecamp's hidden client-side template (its clone loses nothing —
+    // we use event delegation — but a real streamed line gets its own bar).
+    if (container.closest(".hidden-on-template")) return;
+    if (!container.querySelector(".boosts__new-boost")) return; // not reactable yet
+
+    const sig = settings.reactionEmojis.join(" ");
+    let bar = container.querySelector(":scope > .bce-reactions");
+    if (bar && bar.dataset.sig === sig) return; // already up to date
+    if (bar) bar.remove(); // emoji set changed → rebuild
+
+    bar = document.createElement("span");
+    bar.className = "bce-reactions";
+    bar.dataset.sig = sig;
+    for (const emoji of settings.reactionEmojis) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "bce-react-btn";
+      btn.dataset.emoji = emoji;
+      btn.textContent = emoji;
+      btn.setAttribute("aria-label", "React " + emoji);
+      bar.appendChild(btn);
+    }
+    container.appendChild(bar);
+  }
+
+  function applyInlineReactions(root = document) {
+    if (root.querySelectorAll) root.querySelectorAll(".boosts").forEach(injectReactionBar);
+    if (root.nodeType === 1 && root.matches && root.matches(".boosts")) injectReactionBar(root);
+  }
+
+  function removeReactionBars() {
+    document.querySelectorAll(".bce-reactions").forEach((b) => b.remove());
+  }
+
+  // Apply the boost-create response. Basecamp returns the refreshed
+  // <turbo-frame id="boosts_recording_…"> (or turbo-stream(s)); swap it in so
+  // the new reaction shows without a page reload. Our sibling .bce-reactions bar
+  // is untouched.
+  function applyBoostResponse(html) {
+    if (/<turbo-stream[\s>]/i.test(html)) return window.Turbo && window.Turbo.renderStreamMessage(html);
+    const tpl = document.createElement("template");
+    tpl.innerHTML = html.trim();
+    const incoming = tpl.content.querySelector("turbo-frame");
+    const existing = incoming && document.getElementById(incoming.id);
+    if (existing) existing.replaceWith(incoming);
+  }
+
+  async function sendBoost(container, emoji, btn) {
+    const token = document.querySelector('meta[name="csrf-token"]');
+    const target = boostTarget(container);
+    if (!token || !target) return;
+    btn.disabled = true;
+    try {
+      const res = await fetch(target.postUrl, {
+        method: "POST",
+        headers: { "Accept": "text/vnd.turbo-stream.html, text/html", "X-CSRF-Token": token.content },
+        body: new URLSearchParams({
+          authenticity_token: token.content,
+          "boost[boostable_gid]": target.gid,
+          "boost[content]": emoji,
+        }),
+      });
+      if (res.ok) applyBoostResponse(await res.text());
+    } catch (e) {
+      /* network hiccup — the button re-enables and the user can retry */
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // One delegated, capturing click handler for all reaction buttons: survives
+  // Basecamp cloning nodes, adds no per-button listeners, and intercepts the
+  // click before Basecamp's own handlers.
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest && e.target.closest(".bce-react-btn");
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const container = btn.closest(".boosts");
+    if (container) sendBoost(container, btn.dataset.emoji, btn);
+  }, true);
+
   // ---- Wiring -----------------------------------------------------------
 
   // Enhance a freshly added subtree, honoring current settings.
@@ -147,12 +258,14 @@
     if (root.nodeType === 1 && root.classList && root.classList.contains("bce-ago")) return;
     if (settings.timeLabels) decorateAllTimes(root);
     if (settings.rtl) applyAutoDir(root);
+    if (settings.inlineReactions) applyInlineReactions(root);
   }
 
   // Apply or revert each feature across the whole page to match settings.
   function reconcile() {
     if (settings.timeLabels) decorateAllTimes(); else removeTimeLabels();
     if (settings.rtl) applyAutoDir(); else removeAutoDir();
+    if (settings.inlineReactions) applyInlineReactions(); else removeReactionBars();
   }
 
   // Run as early as possible (document_start): the observer below catches most
@@ -182,6 +295,20 @@
     }
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
+
+  // Turbo re-renders (cable-stream updates, morph refreshes, frame loads) can
+  // strip our badges/bars from *inside* an element that stays put — the
+  // observer only sees added nodes, so those wouldn't be restored until the
+  // interval below. Re-reconcile on the next frame after any Turbo render so
+  // they come back instantly instead of "appearing and reappearing".
+  let restoreQueued = false;
+  function scheduleRestore() {
+    if (restoreQueued) return;
+    restoreQueued = true;
+    requestAnimationFrame(() => { restoreQueued = false; reconcile(); });
+  }
+  ["turbo:load", "turbo:render", "turbo:frame-render", "turbo:before-stream-render"]
+    .forEach((ev) => document.addEventListener(ev, scheduleRestore, true));
 
   // Full sweeps at the usual readiness milestones.
   document.addEventListener("DOMContentLoaded", () => enhance(), { once: true });

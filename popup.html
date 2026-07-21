@@ -6,14 +6,15 @@
       :root { color-scheme: light dark; }
       body {
         margin: 0;
-        width: 248px;
+        width: 264px;
         font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         color: #1c1c1c;
         background: #fff;
       }
       @media (prefers-color-scheme: dark) {
         body { color: #eee; background: #242424; }
-        .row { border-color: #3a3a3a; }
+        .row, .subrow { border-color: #3a3a3a; }
+        #reactionEmojis { background: #1c1c1c; color: #eee; border-color: #3a3a3a; }
       }
       header {
         padding: 12px 14px 8px;
@@ -43,6 +44,27 @@
       }
       input:checked + .slider { background: #1f8f4e; }
       input:checked + .slider::before { transform: translateX(16px); }
+
+      /* emoji editor (sub-section of Inline reactions) */
+      .subrow { padding: 4px 14px 12px; border-top: none; }
+      .subrow small { display: block; opacity: 0.6; margin-bottom: 6px; }
+      #reactionEmojis {
+        width: 100%; box-sizing: border-box; padding: 7px 8px;
+        font: 17px/1.3 -apple-system, "Segoe UI Emoji", sans-serif;
+        letter-spacing: 2px; border: 1px solid #ddd; border-radius: 8px;
+        background: #fafafa; color: #1c1c1c;
+      }
+      .subrow__foot {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-top: 6px;
+      }
+      #reactCount { opacity: 0.55; }
+      #resetEmojis {
+        background: none; border: none; padding: 0; cursor: pointer;
+        color: #1f6feb; font: inherit; font-size: 12px;
+      }
+      #resetEmojis:hover { text-decoration: underline; }
+      .disabled { opacity: 0.4; pointer-events: none; }
     </style>
   </head>
   <body>
@@ -63,6 +85,23 @@
         <span class="slider"></span>
       </span>
     </label>
+
+    <label class="row" for="inlineReactions">
+      <span class="label">Inline reactions<small>one-click emoji, no “…” menu</small></span>
+      <span class="switch">
+        <input type="checkbox" id="inlineReactions" />
+        <span class="slider"></span>
+      </span>
+    </label>
+
+    <div class="subrow" id="emojiEditor">
+      <small>Your reaction emoji — type or paste any, spaces optional</small>
+      <input type="text" id="reactionEmojis" spellcheck="false" autocomplete="off" />
+      <div class="subrow__foot">
+        <span id="reactCount"></span>
+        <button type="button" id="resetEmojis">Reset to defaults</button>
+      </div>
+    </div>
 
     <script src="popup.js"></script>
   </body>

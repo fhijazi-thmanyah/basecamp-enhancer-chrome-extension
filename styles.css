@@ -12,3 +12,33 @@
 [dir="auto"] {
   unicode-bidi: plaintext;
 }
+
+/* Inline reaction bar — quick-boost emoji injected into each .boosts container.
+   Sits next to Basecamp's own "+" new-boost button; inherits the container's
+   visibility (always shown on cards/messages, hover-revealed on chat lines). */
+.bce-reactions {
+  display: inline-flex;
+  gap: 1px;
+  vertical-align: middle;
+  margin-inline-start: 2px;
+}
+.bce-react-btn {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 1px 3px;
+  border-radius: 6px;
+  font-size: 15px;
+  line-height: 1;
+  filter: grayscale(0.3);
+  opacity: 0.7;
+  transition: transform 0.08s ease, opacity 0.1s ease, background 0.1s ease;
+}
+.bce-react-btn:hover {
+  opacity: 1;
+  filter: none;
+  transform: scale(1.3);
+  background: rgba(127, 127, 127, 0.16);
+}
+.bce-react-btn:active { transform: scale(1.1); }
+.bce-react-btn:disabled { opacity: 0.35; cursor: default; transform: none; }

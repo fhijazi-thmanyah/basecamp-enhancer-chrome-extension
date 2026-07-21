@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Basecamp Enhancer",
-  "version": "1.1.0",
-  "description": "Appends relative '(X ago)' labels to timestamps and fixes RTL text rendering on Basecamp. Toggle each feature from the toolbar.",
+  "version": "1.2.0",
+  "description": "Relative '(X ago)' timestamps, RTL text fix, and one-click inline emoji reactions on Basecamp. Toggle each feature from the toolbar.",
   "permissions": ["storage"],
   "icons": {
     "16": "icons/icon16.png",
