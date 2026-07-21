@@ -287,65 +287,91 @@
     if (container) sendBoost(container, btn.dataset.emoji, btn);
   }, true);
 
-  // ---- Feature 4: inline the full message menu (chat lines) -------------
+  // ---- Feature 4: inline the full action menu (chat lines + comments) ---
 
-  // Each chat line's "…" kebab is an `action-sheet` whose menu (Edit / Reply /
-  // Bookmark / Bubble up / Copy link / Delete) is lazily fetched from the line's
-  // `/…/lines/<id>/options` endpoint (the toggle's href). We fetch it once (as
-  // the line scrolls into view), lift the real `.action-sheet__content` inline
-  // beside the bubble, and let Basecamp's Stimulus reconnect its controllers so
-  // every action still fires natively — the chat-room actions (Edit/Reply/
-  // Delete) resolve against the live room ancestor; the self-contained ones
-  // (Bookmark/Copy link/Bubble up) come with the cloned content. No kebab click.
+  // Each recording's "…" kebab is an `action-sheet` whose menu (Edit / Reply /
+  // Bookmark / Bubble up / Copy link / Delete / …) is lazily loaded from the
+  // record's `/…/options` endpoint. We fetch it once (as the record nears the
+  // viewport), lift the real menu items inline, and let Basecamp's Stimulus
+  // reconnect their controllers so every action fires natively — chat-room
+  // actions (Edit/Reply/Delete) resolve against the live room ancestor; the
+  // self-contained ones (Bookmark/Copy link/Bubble up) come with the clone. The
+  // two Basecamp variants differ in *where* the URL and items live, hence
+  // `menuSource`/`menuRoot`; everything downstream is shared. No kebab click.
 
-  async function injectLineMenu(line) {
-    if (line.dataset.bceMenu) return; // once per line ("loading"/"1")
-    const toggle = line.querySelector(".action-sheet__expansion-toggle");
-    const bubble = line.querySelector(".chat-line__bubble");
-    if (!toggle || !bubble) return;
-    line.dataset.bceMenu = "loading";
+  const MENU_KINDS = [
+    // chat lines / pings — menu beside the bubble, owner drives left/right
+    { sel: "turbo-frame.chat-line", host: (el) => el.querySelector(".chat-line__bubble"), owned: true },
+    // card / message / todo comments — menu inline under the comment
+    { sel: "article.thread-entry.recording", host: (el) => el.querySelector(".thread-entry__footer") || el, owned: false },
+  ];
+
+  // The options URL + turbo-frame id: comments expose it as a lazy-options frame
+  // `src`; chat lines as the kebab toggle's `href`.
+  function menuSource(el) {
+    const lazy = el.querySelector("turbo-frame.action-sheet__lazy-options[src]");
+    if (lazy) return { url: lazy.getAttribute("src"), fid: lazy.id };
+    const toggle = el.querySelector(".action-sheet__expansion-toggle[href]");
+    return toggle ? { url: toggle.getAttribute("href"), fid: "options" } : null;
+  }
+
+  // The menu items in the fetched frame: chat lines nest them in
+  // `.action-sheet__content`; comments put them straight in the frame.
+  function menuRoot(doc, fid) {
+    return doc.querySelector(".action-sheet--for-chat-line .action-sheet__content")
+        || doc.getElementById(fid)
+        || doc.querySelector("turbo-frame");
+  }
+
+  async function injectMenu(el, kind) {
+    if (!kind || el.dataset.bceMenu) return; // once per record
+    const host = kind.host(el);
+    const src = menuSource(el);
+    if (!host || !src) return;
+    el.dataset.bceMenu = "loading";
     try {
-      const html = await fetch(toggle.getAttribute("href"), {
-        headers: { "Accept": "text/html", "Turbo-Frame": "options" },
-      }).then((r) => r.text());
-      const content = new DOMParser().parseFromString(html, "text/html")
-        .querySelector(".action-sheet--for-chat-line .action-sheet__content");
-      if (!content) { delete line.dataset.bceMenu; return; }
-      const menu = content.cloneNode(true);
-      menu.querySelectorAll(".chat-line-reactions").forEach((n) => n.remove()); // we have our own emoji bar
-      // Popup-positioning targets belong to the (un-cloned) parent sheet's
-      // controllers; drop them + any inline offset so it lays out inline, static.
-      menu.removeAttribute("data-orientation-target");
-      menu.removeAttribute("data-horizontal-offset-target");
-      menu.removeAttribute("style");
-      const host = document.createElement("div");
-      host.className = "bce-linemenu";
-      host.dataset.mine = String(line.getAttribute("data-creator-id") === (me && me.content));
-      host.appendChild(menu);
-      bubble.appendChild(host);
-      line.dataset.bceMenu = "1";
+      const html = await fetch(src.url, { headers: { "Accept": "text/html", "Turbo-Frame": src.fid } }).then((r) => r.text());
+      const root = menuRoot(new DOMParser().parseFromString(html, "text/html"), src.fid);
+      if (!root) { delete el.dataset.bceMenu; return; }
+      const bar = document.createElement("div");
+      bar.className = "bce-linemenu";
+      if (kind.owned) bar.dataset.mine = String(el.getAttribute("data-creator-id") === (me && me.content));
+      for (const n of [...root.cloneNode(true).childNodes]) {
+        // drop our-own-bar reactions, menu dividers, and mobile-app-only dupes
+        if (n.nodeType === 1 && n.matches(".chat-line-reactions, .action-sheet__divider, .app-ios__show, .app-android__show")) continue;
+        bar.appendChild(n); // keep controllers (copy-to-clipboard/bookmarks/bubble-up) intact
+      }
+      // popup-positioning targets belong to the un-cloned parent sheet — drop them
+      bar.querySelectorAll("[data-orientation-target], [data-horizontal-offset-target]").forEach((n) => {
+        n.removeAttribute("data-orientation-target");
+        n.removeAttribute("data-horizontal-offset-target");
+      });
+      host.appendChild(bar);
+      el.dataset.bceMenu = "1";
     } catch (e) {
-      delete line.dataset.bceMenu; // let it retry on the next pass
+      delete el.dataset.bceMenu; // let it retry on the next pass
     }
   }
 
-  // Fetch is per-line, so load lazily: only when a line nears the viewport.
+  // Fetch is per-record, so load lazily: only when a record nears the viewport.
   const menuObserver = new IntersectionObserver((entries) => {
     for (const e of entries) {
       if (!e.isIntersecting) continue;
       menuObserver.unobserve(e.target);
-      injectLineMenu(e.target);
+      injectMenu(e.target, MENU_KINDS.find((k) => e.target.matches(k.sel)));
     }
   }, { rootMargin: "300px" });
 
   function applyInlineMenus(root = document) {
-    if (root.matches && root.matches("turbo-frame.chat-line")) menuObserver.observe(root);
-    if (root.querySelectorAll) root.querySelectorAll("turbo-frame.chat-line").forEach((l) => menuObserver.observe(l));
+    for (const k of MENU_KINDS) {
+      if (root.matches && root.matches(k.sel)) menuObserver.observe(root);
+      if (root.querySelectorAll) root.querySelectorAll(k.sel).forEach((el) => menuObserver.observe(el));
+    }
   }
 
   function removeLineMenus() {
     document.querySelectorAll(".bce-linemenu").forEach((m) => m.remove());
-    document.querySelectorAll("turbo-frame.chat-line[data-bce-menu]").forEach((l) => delete l.dataset.bceMenu);
+    document.querySelectorAll("[data-bce-menu]").forEach((l) => delete l.dataset.bceMenu);
   }
 
   // ---- Wiring -----------------------------------------------------------

@@ -43,35 +43,33 @@
 .bce-react-btn:active { transform: scale(1.1); }
 .bce-react-btn:disabled { opacity: 0.35; cursor: default; transform: none; }
 
-/* Inline message menu — the real chat-line action-sheet (Edit / Reply / Bookmark
-   / Bubble up / Copy link / Delete) lifted inline beside the bubble. Positioned
-   on the inner side: left for your messages, right for everyone else's. */
+/* Inline action menu — the real "…" action-sheet (Edit / Reply / Bookmark /
+   Bubble up / Copy link / Delete / …) lifted inline beside a chat bubble or
+   under a comment. Its items are moved straight into .bce-linemenu; Basecamp's
+   controllers ride along on the item wrappers. For chat lines it sits on the
+   inner side (left for your messages, right for everyone else's); comments just
+   inline left. These !importants flatten Basecamp's popup styling. */
 .bce-linemenu {
   display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  gap: 0;
   margin-top: 3px;
 }
 .bce-linemenu[data-mine="true"] { justify-content: flex-start; }
 .bce-linemenu[data-mine="false"] { justify-content: flex-end; }
-/* Basecamp's action-sheet content is a collapsed popup (opacity:0, absolute,
-   full-width rows). Force it to render as a visible, static, single-row strip. */
-.bce-linemenu > .action-sheet__content {
-  position: static !important;
+/* item wrappers (copy-to-clipboard span, bookmark form/turbo-frame, bubble-up
+   sheet, app-visibility spans) must sit inline, not as blocks/popups */
+.bce-linemenu > span,
+.bce-linemenu > form,
+.bce-linemenu > turbo-frame {
   display: inline-flex !important;
-  flex-flow: row nowrap;
   align-items: center;
-  gap: 0;
-  width: auto !important;
-  max-width: 100%;
-  min-width: 0;
-  height: auto !important;
-  margin: 0;
-  padding: 1px 4px;
+  margin: 0 !important;
+  padding: 0 !important;
   border: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
-  transform: none !important;
-  opacity: 1 !important;
-  visibility: visible !important;
 }
 .bce-linemenu .action-sheet__action {
   width: auto !important;
@@ -79,10 +77,10 @@
   display: inline-flex !important;
   align-items: center;
   margin: 0 !important;
-  padding: 3px 6px;
+  padding: 3px 7px;
   font-size: 12px;
   white-space: nowrap;
-  opacity: 0.7;
+  opacity: 0.72;
   border: 0 !important;
   background: transparent !important;
 }
@@ -91,11 +89,21 @@
   background: rgba(127, 127, 127, 0.12) !important;
   border-radius: 6px;
 }
+.bce-linemenu .action-sheet__divider { display: none !important; }
+/* Comment/todo footers (`.thread-entry__footer`) are absolutely positioned by
+   Basecamp — a floating boosts overlay. Once we add our (wide) reaction bar or
+   inline menu it overflows/overlaps the text, so let the footer flow in place.
+   Scoped via :has() so it only applies where we injected — reverts cleanly. */
+.thread-entry__footer:has(.bce-reactions),
+.thread-entry__footer:has(.bce-linemenu) {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+}
 /* keep the nested "Bubble up" sub-menu a proper popup (don't spill it inline) */
-.bce-linemenu .action-sheet--bubble-up { flex: 0 0 auto; }
+.bce-linemenu .action-sheet--bubble-up { position: relative; flex: 0 0 auto; }
 .bce-linemenu .action-sheet--bubble-up .action-sheet__content {
   position: absolute !important;
-  opacity: 1 !important;
   flex-flow: column !important;
 }
 .bce-linemenu .action-sheet--bubble-up .action-sheet__content .action-sheet__action { width: 100% !important; }

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Basecamp Enhancer",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Basecamp quality-of-life: relative timestamps, RTL fix, one-click inline emoji reactions, and the full chat-line action menu inlined beside each bubble. Toggle each from the toolbar.",
   "permissions": ["storage"],
   "icons": {
