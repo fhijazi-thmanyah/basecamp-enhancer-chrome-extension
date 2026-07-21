@@ -42,3 +42,60 @@
 }
 .bce-react-btn:active { transform: scale(1.1); }
 .bce-react-btn:disabled { opacity: 0.35; cursor: default; transform: none; }
+
+/* Inline message menu — the real chat-line action-sheet (Edit / Reply / Bookmark
+   / Bubble up / Copy link / Delete) lifted inline beside the bubble. Positioned
+   on the inner side: left for your messages, right for everyone else's. */
+.bce-linemenu {
+  display: flex;
+  margin-top: 3px;
+}
+.bce-linemenu[data-mine="true"] { justify-content: flex-start; }
+.bce-linemenu[data-mine="false"] { justify-content: flex-end; }
+/* Basecamp's action-sheet content is a collapsed popup (opacity:0, absolute,
+   full-width rows). Force it to render as a visible, static, single-row strip. */
+.bce-linemenu > .action-sheet__content {
+  position: static !important;
+  display: inline-flex !important;
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: 0;
+  width: auto !important;
+  max-width: 100%;
+  min-width: 0;
+  height: auto !important;
+  margin: 0;
+  padding: 1px 4px;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+.bce-linemenu .action-sheet__action {
+  width: auto !important;
+  flex: 0 0 auto !important;
+  display: inline-flex !important;
+  align-items: center;
+  margin: 0 !important;
+  padding: 3px 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0.7;
+  border: 0 !important;
+  background: transparent !important;
+}
+.bce-linemenu .action-sheet__action:hover {
+  opacity: 1;
+  background: rgba(127, 127, 127, 0.12) !important;
+  border-radius: 6px;
+}
+/* keep the nested "Bubble up" sub-menu a proper popup (don't spill it inline) */
+.bce-linemenu .action-sheet--bubble-up { flex: 0 0 auto; }
+.bce-linemenu .action-sheet--bubble-up .action-sheet__content {
+  position: absolute !important;
+  opacity: 1 !important;
+  flex-flow: column !important;
+}
+.bce-linemenu .action-sheet--bubble-up .action-sheet__content .action-sheet__action { width: 100% !important; }

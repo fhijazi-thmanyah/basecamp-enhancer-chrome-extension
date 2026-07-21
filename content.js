@@ -14,6 +14,7 @@
     timeLabels: true,
     rtl: true,
     inlineReactions: true,
+    inlineMenus: true,
     reactionEmojis: DEFAULT_EMOJIS,
   };
   let settings = { ...DEFAULTS };
@@ -286,6 +287,67 @@
     if (container) sendBoost(container, btn.dataset.emoji, btn);
   }, true);
 
+  // ---- Feature 4: inline the full message menu (chat lines) -------------
+
+  // Each chat line's "…" kebab is an `action-sheet` whose menu (Edit / Reply /
+  // Bookmark / Bubble up / Copy link / Delete) is lazily fetched from the line's
+  // `/…/lines/<id>/options` endpoint (the toggle's href). We fetch it once (as
+  // the line scrolls into view), lift the real `.action-sheet__content` inline
+  // beside the bubble, and let Basecamp's Stimulus reconnect its controllers so
+  // every action still fires natively — the chat-room actions (Edit/Reply/
+  // Delete) resolve against the live room ancestor; the self-contained ones
+  // (Bookmark/Copy link/Bubble up) come with the cloned content. No kebab click.
+
+  async function injectLineMenu(line) {
+    if (line.dataset.bceMenu) return; // once per line ("loading"/"1")
+    const toggle = line.querySelector(".action-sheet__expansion-toggle");
+    const bubble = line.querySelector(".chat-line__bubble");
+    if (!toggle || !bubble) return;
+    line.dataset.bceMenu = "loading";
+    try {
+      const html = await fetch(toggle.getAttribute("href"), {
+        headers: { "Accept": "text/html", "Turbo-Frame": "options" },
+      }).then((r) => r.text());
+      const content = new DOMParser().parseFromString(html, "text/html")
+        .querySelector(".action-sheet--for-chat-line .action-sheet__content");
+      if (!content) { delete line.dataset.bceMenu; return; }
+      const menu = content.cloneNode(true);
+      menu.querySelectorAll(".chat-line-reactions").forEach((n) => n.remove()); // we have our own emoji bar
+      // Popup-positioning targets belong to the (un-cloned) parent sheet's
+      // controllers; drop them + any inline offset so it lays out inline, static.
+      menu.removeAttribute("data-orientation-target");
+      menu.removeAttribute("data-horizontal-offset-target");
+      menu.removeAttribute("style");
+      const host = document.createElement("div");
+      host.className = "bce-linemenu";
+      host.dataset.mine = String(line.getAttribute("data-creator-id") === (me && me.content));
+      host.appendChild(menu);
+      bubble.appendChild(host);
+      line.dataset.bceMenu = "1";
+    } catch (e) {
+      delete line.dataset.bceMenu; // let it retry on the next pass
+    }
+  }
+
+  // Fetch is per-line, so load lazily: only when a line nears the viewport.
+  const menuObserver = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      menuObserver.unobserve(e.target);
+      injectLineMenu(e.target);
+    }
+  }, { rootMargin: "300px" });
+
+  function applyInlineMenus(root = document) {
+    if (root.matches && root.matches("turbo-frame.chat-line")) menuObserver.observe(root);
+    if (root.querySelectorAll) root.querySelectorAll("turbo-frame.chat-line").forEach((l) => menuObserver.observe(l));
+  }
+
+  function removeLineMenus() {
+    document.querySelectorAll(".bce-linemenu").forEach((m) => m.remove());
+    document.querySelectorAll("turbo-frame.chat-line[data-bce-menu]").forEach((l) => delete l.dataset.bceMenu);
+  }
+
   // ---- Wiring -----------------------------------------------------------
 
   // Enhance a freshly added subtree, honoring current settings.
@@ -295,6 +357,7 @@
     if (settings.timeLabels) decorateAllTimes(root);
     if (settings.rtl) applyAutoDir(root);
     if (settings.inlineReactions) applyInlineReactions(root);
+    if (settings.inlineMenus) applyInlineMenus(root);
   }
 
   // Apply or revert each feature across the whole page to match settings.
@@ -302,6 +365,7 @@
     if (settings.timeLabels) decorateAllTimes(); else removeTimeLabels();
     if (settings.rtl) applyAutoDir(); else removeAutoDir();
     if (settings.inlineReactions) applyInlineReactions(); else removeReactionBars();
+    if (settings.inlineMenus) applyInlineMenus(); else removeLineMenus();
   }
 
   // Run as early as possible (document_start): the observer below catches most
