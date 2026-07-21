@@ -4,7 +4,7 @@ A tiny Chrome extension (Manifest V3) that runs **only on Basecamp** and adds tw
 
 1. **Relative timestamps** — appends ` (X ago)` to `<time>` elements (e.g. `Jun 2 (6 days ago)`), computed from the `datetime` attribute via `Intl.RelativeTimeFormat`. Refreshed every 60 s. Timestamps within ±1 day are skipped, since Basecamp already shows those as the word "yesterday"/"today"/"tomorrow".
 2. **RTL fix** — sets `dir="auto"` on content containers **and editable fields** (textareas, text inputs, the rich-text editor) so Arabic (and other RTL) text renders right-to-left — live as you type — while mixed Latin words/numbers stay correctly ordered, and English content stays LTR.
-3. **Inline reactions** — a row of quick-boost emoji injected next to Basecamp's own "+" boost button on every reactable item (cards, comments, messages, chat, threads, pings), so you react in **one click** without opening the "…" menu. The emoji set is fully customizable from the popup.
+3. **Inline reactions** — a row of quick-boost emoji injected next to Basecamp's own "+" boost button on every reactable item (cards, comments, messages, chat, threads, pings), so you react in **one click** without opening the "…" menu. The bar is a **recently-used rotation**: every reaction you make — via the bar or Basecamp's own picker — bubbles that emoji to the front (max 8). Seed/edit the set from the popup.
 
 All run continuously: a `MutationObserver` enhances new content as Basecamp streams it in, and every operation is **idempotent** — re-running never produces duplicate badges, bars, or re-set attributes. Turbo re-renders (cable-stream updates, morph refreshes) are caught via `turbo:*` events so decorations restore instantly instead of flickering.
 
