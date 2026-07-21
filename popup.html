@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        margin: 0;
+        width: 248px;
+        font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #1c1c1c;
+        background: #fff;
+      }
+      @media (prefers-color-scheme: dark) {
+        body { color: #eee; background: #242424; }
+        .row { border-color: #3a3a3a; }
+      }
+      header {
+        padding: 12px 14px 8px;
+        font-weight: 600;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 10px 14px;
+        border-top: 1px solid #eee;
+      }
+      .label { flex: 1; }
+      .label small { display: block; opacity: 0.6; font-weight: 400; }
+
+      /* tiny toggle switch */
+      .switch { position: relative; width: 36px; height: 20px; flex: none; }
+      .switch input { opacity: 0; width: 0; height: 0; }
+      .slider {
+        position: absolute; inset: 0; cursor: pointer;
+        background: #c8c8c8; border-radius: 20px; transition: 0.15s;
+      }
+      .slider::before {
+        content: ""; position: absolute; height: 16px; width: 16px;
+        left: 2px; top: 2px; background: #fff; border-radius: 50%; transition: 0.15s;
+      }
+      input:checked + .slider { background: #1f8f4e; }
+      input:checked + .slider::before { transform: translateX(16px); }
+    </style>
+  </head>
+  <body>
+    <header>Basecamp Enhancer</header>
+
+    <label class="row" for="timeLabels">
+      <span class="label">Relative time labels<small>append “(X ago)” to dates</small></span>
+      <span class="switch">
+        <input type="checkbox" id="timeLabels" />
+        <span class="slider"></span>
+      </span>
+    </label>
+
+    <label class="row" for="rtl">
+      <span class="label">RTL text fix<small>auto-direction content &amp; inputs</small></span>
+      <span class="switch">
+        <input type="checkbox" id="rtl" />
+        <span class="slider"></span>
+      </span>
+    </label>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

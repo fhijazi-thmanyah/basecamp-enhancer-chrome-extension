@@ -1,0 +1,14 @@
+/* Basecamp Enhancer */
+
+/* Relative-time badge appended to <time> elements. */
+.bce-ago {
+  opacity: 0.65;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+/* RTL safety net: when dir="auto" resolves to RTL, mixed content (numbers,
+   Latin words, punctuation) stays correctly ordered via the bidi algorithm. */
+[dir="auto"] {
+  unicode-bidi: plaintext;
+}
