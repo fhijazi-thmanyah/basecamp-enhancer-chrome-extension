@@ -79,8 +79,11 @@
   left: 0;
   right: 0;
   top: auto;
-  bottom: 100%;
-  margin-bottom: 3px;
+  /* Overlap the bubble's OWN top edge — no dead gap. The bar is a descendant
+     of the record, so as long as the pointer stays on bubble-or-bar the record
+     keeps :hover; a gap (the old margin-bottom) handed the pointer to the
+     record ABOVE mid-transit, hiding this bar and popping that one's. */
+  bottom: calc(100% - 9px);
   transform: none;
   flex-wrap: wrap;
   white-space: normal;
