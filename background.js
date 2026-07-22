@@ -37,8 +37,14 @@ const HANDLERS = {
       workdir: msg.workdir,
     }),
   }),
-  // Live worker list: {ok, workers:[{session,title,status,tail,...}], claims:[...]}
+  // Live worker list: {ok, workers:[{session,title,status,tail,web_url,...}], claims:[...]}
   hqWorkers: () => hqCall("/api/workers"),
+  // Kill a worker (HQ refuses non-hq-* sessions server-side)
+  hqKill: (msg) => hqCall("/api/workers/action", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "kill", session: msg.session }),
+  }),
 };
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {

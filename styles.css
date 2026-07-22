@@ -134,34 +134,41 @@
    pane so it stays put while the convo scrolls. Concrete colors only (no
    Canvas/CanvasText): Dark Reader can invert hex, not system keywords. */
 .bce-cc-host { position: relative; }
+/* chat/ping panes: small, translucent, tucked into the composer's bottom-left
+   corner — off the bubbles and message text; solid on hover */
 .bce-cc-btn {
   position: absolute;
-  left: 10px;
-  bottom: 72px; /* clear the chat composer that spans the pane's bottom */
-  width: 36px;
-  height: 36px;
+  left: 6px;
+  bottom: 6px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: 1px solid rgba(0, 0, 0, 0.15);
   background: #fff;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   cursor: pointer;
   z-index: 200;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  transition: transform 0.1s ease;
+  opacity: 0.55;
+  transition: transform 0.1s ease, opacity 0.1s ease;
 }
 /* the main record view scrolls with the window, so its button pins to the
-   viewport instead (visually the pane's bottom-left, above Basecamp's bar) */
+   viewport instead (visually the pane's bottom-left, above Basecamp's bar) —
+   there's open margin there, so it can stay full-size and solid */
 .bce-cc-btn[data-mode="main"] {
   position: fixed;
   left: 18px;
   bottom: 58px;
+  width: 36px;
+  height: 36px;
+  opacity: 1;
   z-index: 2147483000;
 }
-.bce-cc-btn:hover { transform: scale(1.1); }
-.bce-cc-btn img { width: 24px; height: 24px; display: block; }
+.bce-cc-btn:hover { transform: scale(1.1); opacity: 1; }
+.bce-cc-btn img { width: 70%; height: 70%; display: block; }
 
 .bce-ccpop {
   position: fixed;
@@ -263,7 +270,8 @@
   border: 0; background: none; cursor: pointer; color: inherit;
   opacity: 0.4; font-size: 11px; padding: 2px 4px;
 }
-.bce-cc-x:hover { opacity: 1; }
+.bce-cc-x:hover { opacity: 1; color: #d33; } /* it KILLS the session */
+.bce-cc-x:disabled { cursor: default; opacity: 0.3; }
 .bce-cc-dot {
   width: 9px; height: 9px; border-radius: 50%; flex: none;
   background: #999;

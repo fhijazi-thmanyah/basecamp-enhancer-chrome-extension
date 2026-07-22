@@ -649,8 +649,22 @@
         row.appendChild(info);
         const x = ccEl("button", "bce-cc-x", "✕");
         x.type = "button";
-        x.title = "Remove from list (doesn't kill the session)";
+        x.title = "Kill this session (tmux + claude) and remove it";
         x.addEventListener("click", async () => {
+          x.disabled = true;
+          x.textContent = "…";
+          const r = await hqSend({ type: "hqKill", session: s.session });
+          // "refusing/not found" etc. means it's already gone — safe to drop;
+          // but if HQ is unreachable the worker may still be RUNNING: keep the
+          // row so the user knows, and flag it.
+          if (!r.ok && /unreachable/i.test(r.error || "")) {
+            x.disabled = false;
+            x.textContent = "✕";
+            const dot = row.querySelector(".bce-cc-dot");
+            dot.dataset.status = "unreachable";
+            dot.title = "Kill failed: " + r.error;
+            return;
+          }
           saveCcSessions((await loadCcSessions()).filter((v) => v.session !== s.session));
           row.remove();
         });
