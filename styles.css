@@ -43,26 +43,44 @@
 .bce-react-btn:active { transform: scale(1.1); }
 .bce-react-btn:disabled { opacity: 0.35; cursor: default; transform: none; }
 
-/* Inline action menu — the real "…" action-sheet (Edit / Reply / Bookmark /
-   Bubble up / Copy link / Delete / …) lifted inline beside a chat bubble or
-   under a comment. Its items are moved straight into .bce-linemenu; Basecamp's
-   controllers ride along on the item wrappers. For chat lines it sits on the
-   inner side (left for your messages, right for everyone else's); comments just
-   inline left. These !importants flatten Basecamp's popup styling. */
-.bce-linemenu {
+/* Hover bar — a Google-Chat–style pill floated at each record's (chat line /
+   ping / comment) top-right, revealed on hover. It holds the quick-react emoji
+   plus Basecamp's own "…" menu items (their Stimulus controllers reconnect, so
+   every action fires natively). Because it floats, it never disturbs Basecamp's
+   layout — no overflow to juggle. System colors (Canvas/CanvasText) track the
+   user's light/dark theme automatically. */
+.bce-anchor { position: relative; }
+.bce-hoverbar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translateY(-50%);
   display: flex;
-  flex-flow: row wrap;
   align-items: center;
-  gap: 0;
-  margin-top: 3px;
+  gap: 1px;
+  padding: 2px 5px;
+  border-radius: 10px;
+  background: Canvas;
+  border: 1px solid color-mix(in srgb, CanvasText 16%, transparent);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.16);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s ease;
+  z-index: 30;
 }
-.bce-linemenu[data-mine="true"] { justify-content: flex-start; }
-.bce-linemenu[data-mine="false"] { justify-content: flex-end; }
-/* item wrappers (copy-to-clipboard span, bookmark form/turbo-frame, bubble-up
-   sheet, app-visibility spans) must sit inline, not as blocks/popups */
-.bce-linemenu > span,
-.bce-linemenu > form,
-.bce-linemenu > turbo-frame {
+[data-bce-rec]:hover .bce-hoverbar,
+[data-bce-rec]:focus-within .bce-hoverbar {
+  opacity: 1;
+  pointer-events: auto;
+}
+.bce-hoverbar .bce-menu { display: inline-flex; align-items: center; }
+/* Basecamp's menu items ship as full-width popup rows — flatten to an inline
+   strip. item wrappers (copy-to-clipboard span, bookmark form/turbo-frame,
+   bubble-up sheet) must sit inline, not as blocks/popups. */
+.bce-hoverbar .bce-menu > span,
+.bce-hoverbar .bce-menu > form,
+.bce-hoverbar .bce-menu > turbo-frame {
   display: inline-flex !important;
   align-items: center;
   margin: 0 !important;
@@ -71,39 +89,29 @@
   background: transparent !important;
   box-shadow: none !important;
 }
-.bce-linemenu .action-sheet__action {
+.bce-hoverbar .action-sheet__action {
   width: auto !important;
   flex: 0 0 auto !important;
   display: inline-flex !important;
   align-items: center;
   margin: 0 !important;
-  padding: 3px 7px;
+  padding: 3px 6px;
   font-size: 12px;
   white-space: nowrap;
-  opacity: 0.72;
+  opacity: 0.75;
   border: 0 !important;
   background: transparent !important;
 }
-.bce-linemenu .action-sheet__action:hover {
+.bce-hoverbar .action-sheet__action:hover {
   opacity: 1;
-  background: rgba(127, 127, 127, 0.12) !important;
+  background: rgba(127, 127, 127, 0.14) !important;
   border-radius: 6px;
 }
-.bce-linemenu .action-sheet__divider { display: none !important; }
-/* Comment/todo footers (`.thread-entry__footer`) are absolutely positioned by
-   Basecamp — a floating boosts overlay. Once we add our (wide) reaction bar or
-   inline menu it overflows/overlaps the text, so let the footer flow in place.
-   Scoped via :has() so it only applies where we injected — reverts cleanly. */
-.thread-entry__footer:has(.bce-reactions),
-.thread-entry__footer:has(.bce-linemenu) {
-  position: static !important;
-  width: auto !important;
-  height: auto !important;
-}
+.bce-hoverbar .action-sheet__divider { display: none !important; }
 /* keep the nested "Bubble up" sub-menu a proper popup (don't spill it inline) */
-.bce-linemenu .action-sheet--bubble-up { position: relative; flex: 0 0 auto; }
-.bce-linemenu .action-sheet--bubble-up .action-sheet__content {
+.bce-hoverbar .action-sheet--bubble-up { position: relative; flex: 0 0 auto; }
+.bce-hoverbar .action-sheet--bubble-up .action-sheet__content {
   position: absolute !important;
   flex-flow: column !important;
 }
-.bce-linemenu .action-sheet--bubble-up .action-sheet__content .action-sheet__action { width: 100% !important; }
+.bce-hoverbar .action-sheet--bubble-up .action-sheet__content .action-sheet__action { width: 100% !important; }

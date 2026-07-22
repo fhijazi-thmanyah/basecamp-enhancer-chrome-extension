@@ -1,8 +1,10 @@
 // Basecamp Enhancer — content script
 // 1. Append a "(X ago)" relative-time label to <time> elements.
 // 2. Fix RTL: auto-detect text direction on content + input fields.
-// 3. Inline reactions: a row of quick-boost emoji on every reactable item,
-//    so you react in one click without opening the "…" menu.
+// 3. Quick reactions: a row of one-click boost emoji (recently-used rotation).
+// 4. Hover bar: a Google-Chat–style pill floated at each message's top-right on
+//    hover, holding the quick-react emoji plus the record's full "…" action menu
+//    (Edit / Reply / Bookmark / Bubble up / Copy link / Delete / …).
 // All features are individually toggleable from the toolbar popup and are
 // applied/reverted live via chrome.storage; with all off it's normal Basecamp.
 
@@ -18,6 +20,11 @@
     reactionEmojis: DEFAULT_EMOJIS,
   };
   let settings = { ...DEFAULTS };
+
+  // A "record" = a hoverable message: a chat line/ping or a comment. Both get
+  // the unified hover bar (reactions + action menu), and their standalone
+  // reaction bars are suppressed in favor of it.
+  const RECORD_SEL = "turbo-frame.chat-line, article.thread-entry.recording";
 
   const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "always" });
 
@@ -204,17 +211,13 @@
     return { postUrl: url.pathname.replace(/\/new$/, ""), gid: atob(encoded) };
   }
 
-  function injectReactionBar(container) {
-    if (!container.querySelector(".boosts__new-boost")) return; // not reactable yet
+  const reactionsSig = () => settings.reactionEmojis.join(" ");
 
-    const sig = settings.reactionEmojis.join(" ");
-    let bar = container.querySelector(":scope > .bce-reactions");
-    if (bar && bar.dataset.sig === sig) return; // already up to date
-    if (bar) bar.remove(); // emoji set changed → rebuild
-
-    bar = document.createElement("span");
+  // A .bce-reactions span of quick-boost buttons for the current emoji set.
+  function buildReactionBar() {
+    const bar = document.createElement("span");
     bar.className = "bce-reactions";
-    bar.dataset.sig = sig;
+    bar.dataset.sig = reactionsSig();
     for (const emoji of settings.reactionEmojis) {
       const btn = document.createElement("button");
       btn.type = "button";
@@ -224,7 +227,26 @@
       btn.setAttribute("aria-label", "React " + emoji);
       bar.appendChild(btn);
     }
-    container.appendChild(bar);
+    return bar;
+  }
+
+  // Add/refresh a reaction bar as a direct child of `parent`, reusing the
+  // existing one unless the emoji set changed. `lead` inserts it first.
+  function setReactionBar(parent, lead) {
+    let bar = parent.querySelector(":scope > .bce-reactions");
+    if (bar && bar.dataset.sig === reactionsSig()) return; // already up to date
+    if (bar) bar.remove(); // emoji set changed → rebuild
+    bar = buildReactionBar();
+    if (lead) parent.insertBefore(bar, parent.firstChild); else parent.appendChild(bar);
+  }
+
+  // Inline reactions on standalone boost bars (the main card/message/todo
+  // detail). Records (chat lines / comments) instead get their reactions inside
+  // the hover bar, so skip those here to avoid a duplicate.
+  function injectReactionBar(container) {
+    if (container.closest(RECORD_SEL)) return;
+    if (!container.querySelector(".boosts__new-boost")) return; // not reactable yet
+    setReactionBar(container, false);
   }
 
   function applyInlineReactions(root = document) {
@@ -283,28 +305,24 @@
     if (!btn) return;
     e.preventDefault();
     e.stopPropagation();
-    const container = btn.closest(".boosts");
+    // Hover-bar buttons sit outside `.boosts`; resolve it via the record.
+    const rec = btn.closest("[data-bce-rec]");
+    const container = (rec && rec.querySelector(".boosts")) || btn.closest(".boosts");
     if (container) sendBoost(container, btn.dataset.emoji, btn);
   }, true);
 
-  // ---- Feature 4: inline the full action menu (chat lines + comments) ---
+  // ---- Feature 4: hover bar (reactions + full action menu) --------------
 
-  // Each recording's "…" kebab is an `action-sheet` whose menu (Edit / Reply /
-  // Bookmark / Bubble up / Copy link / Delete / …) is lazily loaded from the
-  // record's `/…/options` endpoint. We fetch it once (as the record nears the
-  // viewport), lift the real menu items inline, and let Basecamp's Stimulus
-  // reconnect their controllers so every action fires natively — chat-room
-  // actions (Edit/Reply/Delete) resolve against the live room ancestor; the
-  // self-contained ones (Bookmark/Copy link/Bubble up) come with the clone. The
-  // two Basecamp variants differ in *where* the URL and items live, hence
-  // `menuSource`/`menuRoot`; everything downstream is shared. No kebab click.
-
-  const MENU_KINDS = [
-    // chat lines / pings — menu beside the bubble, owner drives left/right
-    { sel: "turbo-frame.chat-line", host: (el) => el.querySelector(".chat-line__bubble"), owned: true },
-    // card / message / todo comments — menu inline under the comment
-    { sel: "article.thread-entry.recording", host: (el) => el.querySelector(".thread-entry__footer") || el, owned: false },
-  ];
+  // Google-Chat–style: on hover, one pill floats at a record's top-right holding
+  // your quick-react emoji plus the record's real "…" menu (Edit / Reply /
+  // Bookmark / Bubble up / Copy link / Delete / …). The menu items are
+  // Basecamp's own nodes, lifted in so their Stimulus controllers reconnect and
+  // every action fires natively — chat-room actions (Edit/Reply/Delete) resolve
+  // against the live room ancestor; self-contained ones (Bookmark/Copy link/
+  // Bubble up) ride along in the clone. Floating means it never disturbs
+  // Basecamp's layout — no overflow to juggle. The menu is lazily fetched from
+  // the record's `/…/options` endpoint as the record nears the viewport (so it's
+  // ready before you hover). Reactions post via the boost gid (see sendBoost).
 
   // The options URL + turbo-frame id: comments expose it as a lazy-options frame
   // `src`; chat lines as the kebab toggle's `href`.
@@ -323,55 +341,86 @@
         || doc.querySelector("turbo-frame");
   }
 
-  async function injectMenu(el, kind) {
-    if (!kind || el.dataset.bceMenu) return; // once per record
-    const host = kind.host(el);
-    const src = menuSource(el);
-    if (!host || !src) return;
-    el.dataset.bceMenu = "loading";
+  // Ensure the record carries its floating hover bar; return it. Idempotent.
+  // The bar anchors to the message bubble (chat) or the record itself
+  // (comments) so it floats at *that* element's top-right, snug to the message —
+  // near where Basecamp's "…" sits. `data-bce-rec` (on the whole record) is the
+  // hover trigger; `.bce-anchor` is the positioned parent.
+  function hoverBarFor(rec) {
+    const anchor = rec.querySelector(".chat-line__bubble") || rec;
+    let bar = anchor.querySelector(":scope > .bce-hoverbar");
+    if (!bar) {
+      rec.setAttribute("data-bce-rec", "");
+      anchor.classList.add("bce-anchor");
+      bar = document.createElement("div");
+      bar.className = "bce-hoverbar";
+      anchor.appendChild(bar);
+    }
+    return bar;
+  }
+
+  // Lift the record's real "…" menu into its hover bar — once per record.
+  async function fillHoverMenu(rec, bar) {
+    if (bar.dataset.menu) return;
+    const src = menuSource(rec);
+    if (!src) return;
+    bar.dataset.menu = "loading";
     try {
       const html = await fetch(src.url, { headers: { "Accept": "text/html", "Turbo-Frame": src.fid } }).then((r) => r.text());
       const root = menuRoot(new DOMParser().parseFromString(html, "text/html"), src.fid);
-      if (!root) { delete el.dataset.bceMenu; return; }
-      const bar = document.createElement("div");
-      bar.className = "bce-linemenu";
-      if (kind.owned) bar.dataset.mine = String(el.getAttribute("data-creator-id") === (me && me.content));
+      if (!root) { delete bar.dataset.menu; return; }
+      const menu = document.createElement("span");
+      menu.className = "bce-menu";
       for (const n of [...root.cloneNode(true).childNodes]) {
-        // drop our-own-bar reactions, menu dividers, and mobile-app-only dupes
+        // drop the native reaction row, menu dividers, and mobile-app-only dupes
         if (n.nodeType === 1 && n.matches(".chat-line-reactions, .action-sheet__divider, .app-ios__show, .app-android__show")) continue;
-        bar.appendChild(n); // keep controllers (copy-to-clipboard/bookmarks/bubble-up) intact
+        menu.appendChild(n); // keep controllers (copy-to-clipboard/bookmarks/bubble-up) intact
       }
       // popup-positioning targets belong to the un-cloned parent sheet — drop them
-      bar.querySelectorAll("[data-orientation-target], [data-horizontal-offset-target]").forEach((n) => {
+      menu.querySelectorAll("[data-orientation-target], [data-horizontal-offset-target]").forEach((n) => {
         n.removeAttribute("data-orientation-target");
         n.removeAttribute("data-horizontal-offset-target");
       });
-      host.appendChild(bar);
-      el.dataset.bceMenu = "1";
+      bar.appendChild(menu);
+      bar.dataset.menu = "1";
     } catch (e) {
-      delete el.dataset.bceMenu; // let it retry on the next pass
+      delete bar.dataset.menu; // let it retry on the next pass
     }
   }
 
-  // Fetch is per-record, so load lazily: only when a record nears the viewport.
+  // Menu fetch is per-record, so load lazily: only as a record nears the viewport.
   const menuObserver = new IntersectionObserver((entries) => {
     for (const e of entries) {
       if (!e.isIntersecting) continue;
       menuObserver.unobserve(e.target);
-      injectMenu(e.target, MENU_KINDS.find((k) => e.target.matches(k.sel)));
+      fillHoverMenu(e.target, hoverBarFor(e.target));
     }
   }, { rootMargin: "300px" });
 
-  function applyInlineMenus(root = document) {
-    for (const k of MENU_KINDS) {
-      if (root.matches && root.matches(k.sel)) menuObserver.observe(root);
-      if (root.querySelectorAll) root.querySelectorAll(k.sel).forEach((el) => menuObserver.observe(el));
+  // Build/refresh hover bars across a subtree: reactions (if enabled, leading)
+  // plus a lazily-loaded menu (if enabled). Each part is gated by its own toggle.
+  function applyHoverBars(root = document) {
+    const recs = [];
+    if (root.matches && root.matches(RECORD_SEL)) recs.push(root);
+    if (root.querySelectorAll) recs.push(...root.querySelectorAll(RECORD_SEL));
+    for (const rec of recs) {
+      const bar = hoverBarFor(rec);
+      if (settings.inlineReactions) setReactionBar(bar, true);
+      else { const rx = bar.querySelector(":scope > .bce-reactions"); if (rx) rx.remove(); }
+      if (settings.inlineMenus) menuObserver.observe(rec);
     }
   }
 
-  function removeLineMenus() {
-    document.querySelectorAll(".bce-linemenu").forEach((m) => m.remove());
-    document.querySelectorAll("[data-bce-menu]").forEach((l) => delete l.dataset.bceMenu);
+  function removeHoverBars() {
+    document.querySelectorAll(".bce-hoverbar").forEach((b) => b.remove());
+    document.querySelectorAll("[data-bce-rec]").forEach((r) => r.removeAttribute("data-bce-rec"));
+    document.querySelectorAll(".bce-anchor").forEach((a) => a.classList.remove("bce-anchor"));
+  }
+
+  // Strip only the menu portion (the reactions toggle stays independent).
+  function removeHoverMenus() {
+    document.querySelectorAll(".bce-hoverbar .bce-menu").forEach((m) => m.remove());
+    document.querySelectorAll(".bce-hoverbar[data-menu]").forEach((b) => b.removeAttribute("data-menu"));
   }
 
   // ---- Wiring -----------------------------------------------------------
@@ -382,8 +431,8 @@
     if (root.nodeType === 1 && root.classList && root.classList.contains("bce-ago")) return;
     if (settings.timeLabels) decorateAllTimes(root);
     if (settings.rtl) applyAutoDir(root);
-    if (settings.inlineReactions) applyInlineReactions(root);
-    if (settings.inlineMenus) applyInlineMenus(root);
+    if (settings.inlineReactions) applyInlineReactions(root); // standalone boost bars
+    if (settings.inlineReactions || settings.inlineMenus) applyHoverBars(root); // records
   }
 
   // Apply or revert each feature across the whole page to match settings.
@@ -391,7 +440,8 @@
     if (settings.timeLabels) decorateAllTimes(); else removeTimeLabels();
     if (settings.rtl) applyAutoDir(); else removeAutoDir();
     if (settings.inlineReactions) applyInlineReactions(); else removeReactionBars();
-    if (settings.inlineMenus) applyInlineMenus(); else removeLineMenus();
+    if (settings.inlineReactions || settings.inlineMenus) applyHoverBars(); else removeHoverBars();
+    if (!settings.inlineMenus) removeHoverMenus();
   }
 
   // Run as early as possible (document_start): the observer below catches most
