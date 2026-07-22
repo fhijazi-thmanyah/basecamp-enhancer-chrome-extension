@@ -431,9 +431,10 @@
 
   // ---- Feature 5: Claude Code launcher (HQ workers) ----------------------
 
-  // A floating button (bottom-right, always reachable — no scrolling) that
-  // launches a Claude Code worker on the local HQ server to handle/watch the
-  // CURRENT Basecamp conversation. All HQ traffic goes through the background
+  // A launcher button pinned bottom-left of EACH open conversation pane (main
+  // record view + every chat/ping window — separate buttons, separate URLs)
+  // that spawns a Claude Code worker on the local HQ server to handle/watch
+  // that conversation. All HQ traffic goes through the background
   // service worker (see background.js — content scripts are CORS-bound to the
   // page origin). HQ's spawn returns the tmux session name synchronously, but
   // a 200 only means tmux accepted the command — claude is typed into a
@@ -450,16 +451,16 @@
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  // Only the typed prompt + this page's URL + our fixed template go to the
+  // Only the typed prompt + the pane's URL + our fixed template go to the
   // worker — never text scraped from the page (it runs unattended with
   // --dangerously-skip-permissions; page content is untrusted).
-  function ccPrompt(typed, loop) {
+  function ccPrompt(typed, loop, url) {
     const watch = loop === "oneshot"
       ? "Handle it once — do NOT set up a watch loop."
       : `Then /loop ${loop} — keep watching this thread and respond as needed.`;
     return (
       `${typed.trim()}\n\n` +
-      `Basecamp thread: ${location.href}\n\n` +
+      `Basecamp thread: ${url}\n\n` +
       `Use /basecamp to read this thread. ${watch} ` +
       `If you have no idea what to do, or you're afraid of making a mistake, ` +
       `send Faris a macOS notification (osascript -e 'display notification "…" with title "CC worker"') and hold off.`
@@ -505,23 +506,33 @@
 
   // --- UI ---
 
-  function ccIcon() {
-    // Claude-ish starburst mark (inline SVG, no external assets).
-    const NS = "http://www.w3.org/2000/svg";
-    const svg = document.createElementNS(NS, "svg");
-    svg.setAttribute("viewBox", "0 0 24 24");
-    svg.setAttribute("class", "bce-cc-icon");
-    for (let i = 0; i < 12; i++) {
-      const a = (i / 12) * 2 * Math.PI;
-      const r0 = 3.2, r1 = i % 3 === 0 ? 10.5 : 8;
-      const line = document.createElementNS(NS, "line");
-      line.setAttribute("x1", (12 + r0 * Math.cos(a)).toFixed(2));
-      line.setAttribute("y1", (12 + r0 * Math.sin(a)).toFixed(2));
-      line.setAttribute("x2", (12 + r1 * Math.cos(a)).toFixed(2));
-      line.setAttribute("y2", (12 + r1 * Math.sin(a)).toFixed(2));
-      svg.appendChild(line);
+  // One launcher button PER OPEN CONVERSATION, pinned bottom-left of its pane
+  // (doesn't scroll with the messages): every chat/ping window anchors to the
+  // wrapper around its `.chat__lines` scroller (covers the full-page room AND
+  // each sidebar ping), while the main record view (card/todo/message — the
+  // window itself scrolls) pins to the viewport. Each button carries ITS
+  // pane's URL, so a sidebar ping and the main card launch independently.
+
+  function ccPaneUrl(host) {
+    const tf = host.closest("turbo-frame[src]");
+    if (tf) return new URL(tf.getAttribute("src"), location.href).href;
+    const a = host.querySelector('a[href*="/circles/"], a[href*="/chats/"]');
+    if (a && a.href) return a.href;
+    return location.href;
+  }
+
+  function ccPanes() {
+    const panes = [];
+    document.querySelectorAll(".chat__lines").forEach((sc) => {
+      const host = sc.parentElement;
+      if (host) panes.push({ host, mode: "pane", url: ccPaneUrl(host) });
+    });
+    // the main record view — unless this page IS the chat (covered above)
+    const main = document.querySelector("main");
+    if (main && !main.querySelector(".chat__lines")) {
+      panes.push({ host: main, mode: "main", url: location.href });
     }
-    return svg;
+    return panes;
   }
 
   function ccEl(tag, cls, text) {
@@ -533,17 +544,20 @@
 
   let ccPollTimer = null;
 
-  function ccBuildPopover() {
+  function ccBuildPopover(url) {
     const pop = ccEl("div", "bce-ccpop");
 
     const head = ccEl("div", "bce-ccpop__head", "Launch Claude Code on this conversation");
     pop.appendChild(head);
 
     const ta = ccEl("textarea", "bce-ccpop__prompt");
-    ta.placeholder = "What should Claude do here?";
+    ta.placeholder = "What should Claude do here?  (⌘⏎ to launch)";
     ta.rows = 3;
     pop.appendChild(ta);
 
+    // "Watch ⏱️" — how often the worker re-checks the thread (or just once)
+    const watchRow = ccEl("div", "bce-ccpop__watch");
+    watchRow.appendChild(ccEl("span", "bce-ccpop__watchlabel", "Watch ⏱️"));
     const seg = ccEl("div", "bce-ccpop__seg");
     for (const { key, label } of CC_LOOPS) {
       const b = ccEl("button", "bce-ccpop__segbtn", label);
@@ -556,7 +570,8 @@
       });
       seg.appendChild(b);
     }
-    pop.appendChild(seg);
+    watchRow.appendChild(seg);
+    pop.appendChild(watchRow);
 
     const launch = ccEl("button", "bce-ccpop__launch", "Launch");
     launch.type = "button";
@@ -577,6 +592,14 @@
       }
     }
 
+    // ⌘/Ctrl+Enter launches, Escape closes (Esc works anywhere in the popover)
+    ta.addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); launch.click(); }
+    });
+    pop.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") { e.stopPropagation(); ccClosePopover(); }
+    });
+
     launch.addEventListener("click", async () => {
       const typed = ta.value.trim();
       if (!typed) { setStatus("err", "Write a prompt first."); ta.focus(); return; }
@@ -584,10 +607,10 @@
       launch.disabled = true;
       setStatus("busy", "Spawning worker…");
       const title = "bc " + typed.slice(0, 40);
-      const r = await hqSend({ type: "hqSpawn", title, prompt: ccPrompt(typed, loop), workdir: CC_WORKDIR });
+      const r = await hqSend({ type: "hqSpawn", title, prompt: ccPrompt(typed, loop, url), workdir: CC_WORKDIR });
       if (!r.ok) { setStatus("err", "Launch failed: " + r.error); launch.disabled = false; return; }
       const sessions = await loadCcSessions();
-      sessions.unshift({ session: r.session, title, url: location.href, ts: Date.now() });
+      sessions.unshift({ session: r.session, title, url, ts: Date.now() });
       saveCcSessions(sessions);
       renderTray();
       setStatus("busy", `${r.session} spawned — confirming claude started…`);
@@ -647,6 +670,15 @@
         const w = (r.workers || []).find((x) => x.session === row.dataset.session);
         dot.dataset.status = w ? w.status : "gone";
         dot.title = w ? `${w.status}${w.tail ? "\n\n" + w.tail : ""}` : "session no longer exists";
+        // once the worker's remote-control bridge connects, HQ exposes its
+        // claude.ai URL — surface it as an "open in web Claude Code" link
+        if (w && w.web_url && !row.querySelector(".bce-cc-web")) {
+          const a = ccEl("a", "bce-cc-web", "web ↗");
+          a.href = w.web_url;
+          a.target = "_blank";
+          a.title = "Open this session in claude.ai Claude Code";
+          row.insertBefore(a, row.querySelector(".bce-cc-x"));
+        }
       }
     }
 
@@ -655,39 +687,57 @@
     return pop;
   }
 
-  function ensureCcFab() {
+  function ccClosePopover() {
+    const pop = document.getElementById("bce-cc-pop");
+    if (pop) pop.remove();
+    clearInterval(ccPollTimer);
+    ccPollTimer = null;
+  }
+
+  function ccTogglePopover(btn) {
+    const open = document.getElementById("bce-cc-pop");
+    const wasOwn = open && open.dataset.owner === btn.dataset.url;
+    ccClosePopover();
+    if (wasOwn) return; // same button ⇒ plain toggle-closed
+    const pop = ccBuildPopover(btn.dataset.url);
+    pop.id = "bce-cc-pop";
+    pop.dataset.owner = btn.dataset.url;
+    document.body.appendChild(pop);
+    // open just above the button, growing rightward (button is bottom-left)
+    const r = btn.getBoundingClientRect();
+    pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 356)) + "px";
+    pop.style.bottom = (window.innerHeight - r.top + 8) + "px";
+    pop.renderTray();
+    ccPollTimer = setInterval(() => pop.pollTray(), 5000);
+    pop.querySelector(".bce-ccpop__prompt").focus();
+  }
+
+  function applyCcLaunchers() {
     if (!document.body) return;
-    let fab = document.getElementById("bce-cc-fab");
-    if (!fab) {
-      fab = ccEl("button", null);
-      fab.id = "bce-cc-fab";
-      fab.type = "button";
-      fab.title = "Launch Claude Code on this conversation";
-      fab.appendChild(ccIcon());
-      fab.addEventListener("click", () => {
-        let pop = document.getElementById("bce-cc-pop");
-        if (pop) { // toggle closed
-          pop.remove();
-          clearInterval(ccPollTimer);
-          ccPollTimer = null;
-          return;
-        }
-        pop = ccBuildPopover();
-        pop.id = "bce-cc-pop";
-        document.body.appendChild(pop);
-        pop.renderTray();
-        ccPollTimer = setInterval(() => pop.pollTray(), 5000);
-        pop.querySelector(".bce-ccpop__prompt").focus();
-      });
-      document.body.appendChild(fab);
+    for (const pane of ccPanes()) {
+      let btn = pane.host.querySelector(":scope > .bce-cc-btn");
+      if (!btn) {
+        pane.host.classList.add("bce-cc-host");
+        btn = ccEl("button", "bce-cc-btn");
+        btn.type = "button";
+        btn.title = "Launch Claude Code on this conversation";
+        const img = document.createElement("img");
+        img.src = chrome.runtime.getURL("icons/claudecode.png");
+        img.alt = "Claude Code";
+        btn.appendChild(img);
+        btn.addEventListener("click", () => ccTogglePopover(btn));
+        pane.host.appendChild(btn);
+      }
+      // keep fresh — Turbo navigations reuse panes with new content
+      btn.dataset.mode = pane.mode;
+      btn.dataset.url = pane.url;
     }
   }
 
-  function removeCcFab() {
-    document.getElementById("bce-cc-fab")?.remove();
-    document.getElementById("bce-cc-pop")?.remove();
-    clearInterval(ccPollTimer);
-    ccPollTimer = null;
+  function removeCcLaunchers() {
+    document.querySelectorAll(".bce-cc-btn").forEach((b) => b.remove());
+    document.querySelectorAll(".bce-cc-host").forEach((h) => h.classList.remove("bce-cc-host"));
+    ccClosePopover();
   }
 
   // ---- Wiring -----------------------------------------------------------
@@ -700,6 +750,8 @@
     if (settings.rtl) applyAutoDir(root);
     if (settings.inlineReactions) applyInlineReactions(root); // standalone boost bars
     if (settings.inlineReactions || settings.inlineMenus) applyHoverBars(root); // records
+    // a newly opened ping window is a new pane — give it its button right away
+    if (settings.ccLaunch) applyCcLaunchers();
   }
 
   // Apply or revert each feature across the whole page to match settings.
@@ -709,9 +761,9 @@
     if (settings.inlineReactions) applyInlineReactions(); else removeReactionBars();
     if (settings.inlineReactions || settings.inlineMenus) applyHoverBars(); else removeHoverBars();
     if (!settings.inlineMenus) removeHoverMenus();
-    // FAB is global (not per-subtree); Turbo body swaps drop it, and the
-    // turbo:* → reconcile listeners bring it right back.
-    if (settings.ccLaunch) ensureCcFab(); else removeCcFab();
+    // Launcher buttons are per-pane; Turbo body swaps drop them, and the
+    // turbo:* → reconcile listeners bring them right back.
+    if (settings.ccLaunch) applyCcLaunchers(); else removeCcLaunchers();
   }
 
   // Run as early as possible (document_start): the observer below catches most
