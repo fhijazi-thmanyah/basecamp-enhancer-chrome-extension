@@ -93,7 +93,12 @@
   opacity: 1;
   pointer-events: auto;
 }
-.bce-hoverbar .bce-menu { display: inline-flex; align-items: center; }
+/* display:contents — the wrappers generate no box, so every emoji and menu
+   item is a direct flex item of the bar and WRAPS with it. As inline-flex
+   each wrapper was one unbreakable item: wider than the bubble ⇒ it spilled
+   out of the pill. (.bce-reactions stays inline-flex in standalone .boosts.) */
+.bce-hoverbar .bce-menu,
+.bce-hoverbar .bce-reactions { display: contents; }
 /* Basecamp's menu items ship as full-width popup rows — flatten to an inline
    strip. item wrappers (copy-to-clipboard span, bookmark form/turbo-frame,
    bubble-up sheet) must sit inline, not as blocks/popups. */
