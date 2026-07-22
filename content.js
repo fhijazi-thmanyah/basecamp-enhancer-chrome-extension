@@ -548,6 +548,29 @@
   }
 
   let ccPollTimer = null;
+  let ccBusyTimer = null;
+
+  // Spin the launcher icon while a worker launched from that conversation is
+  // actively working — tracked ccSessions matched to buttons by URL.
+  async function ccSyncBusy() {
+    const btns = document.querySelectorAll(".bce-cc-btn");
+    if (!btns.length) return;
+    const sessions = await loadCcSessions();
+    const busy = new Set();
+    if (sessions.length) {
+      const r = await hqSend({ type: "hqWorkers" });
+      if (r.ok) {
+        for (const w of r.workers || []) {
+          const s = w.status === "working" && sessions.find((x) => x.session === w.session);
+          if (s) busy.add(s.url);
+        }
+      }
+    }
+    btns.forEach((b) => {
+      if (busy.has(b.dataset.url)) b.dataset.busy = "1";
+      else delete b.dataset.busy;
+    });
+  }
 
   function ccBuildPopover(url) {
     const pop = ccEl("div", "bce-ccpop");
@@ -731,10 +754,19 @@
     pop.querySelector(".bce-ccpop__prompt").focus();
   }
 
+  // Click anywhere outside the popover (and not on a launcher button, which
+  // has its own toggle semantics) closes it. Capturing, so Basecamp can't
+  // swallow the event first.
+  document.addEventListener("pointerdown", (e) => {
+    const pop = document.getElementById("bce-cc-pop");
+    const t = e.target;
+    if (pop && !pop.contains(t) && !(t.closest && t.closest(".bce-cc-btn"))) ccClosePopover();
+  }, true);
+
   function applyCcLaunchers() {
     if (!document.body) return;
     for (const pane of ccPanes()) {
-      let btn = pane.host.querySelector(":scope > .bce-cc-btn");
+      let btn = pane.host.querySelector(".bce-cc-btn");
       if (!btn) {
         pane.host.classList.add("bce-cc-host");
         btn = ccEl("button", "bce-cc-btn");
@@ -745,17 +777,33 @@
         img.alt = "Claude Code";
         btn.appendChild(img);
         btn.addEventListener("click", () => ccTogglePopover(btn));
-        pane.host.appendChild(btn);
+        // chat/ping panes: into the composer, in a gutter to the RIGHT of the
+        // message input (.bce-cc-beside shrinks the input to free the space);
+        // main view (and fallback if Basecamp restructures): pinned to the host
+        const slot = pane.mode === "pane" && pane.host.querySelector(".chat__footer form.chat__form > .relative");
+        if (slot) {
+          slot.closest("form").classList.add("bce-cc-beside");
+          slot.appendChild(btn);
+        } else {
+          pane.host.appendChild(btn);
+        }
       }
       // keep fresh — Turbo navigations reuse panes with new content
       btn.dataset.mode = pane.mode;
       btn.dataset.url = pane.url;
     }
+    if (!ccBusyTimer) {
+      ccBusyTimer = setInterval(ccSyncBusy, 10000);
+      ccSyncBusy();
+    }
   }
 
   function removeCcLaunchers() {
     document.querySelectorAll(".bce-cc-btn").forEach((b) => b.remove());
+    document.querySelectorAll(".bce-cc-beside").forEach((f) => f.classList.remove("bce-cc-beside"));
     document.querySelectorAll(".bce-cc-host").forEach((h) => h.classList.remove("bce-cc-host"));
+    clearInterval(ccBusyTimer);
+    ccBusyTimer = null;
     ccClosePopover();
   }
 

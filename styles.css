@@ -136,14 +136,17 @@
    pane so it stays put while the convo scrolls. Concrete colors only (no
    Canvas/CanvasText): Dark Reader can invert hex, not system keywords. */
 .bce-cc-host { position: relative; }
-/* chat/ping panes: small, translucent, tucked into the composer's bottom-left
-   corner — off the bubbles and message text; solid on hover */
+/* chat/ping panes: the button lives INSIDE the composer, in a gutter to the
+   RIGHT of the message input — .bce-cc-beside on the form shrinks the input
+   to free the space, and the button anchors to the editor wrapper */
+form.bce-cc-beside { margin-right: 38px; }
+form.bce-cc-beside > .relative { position: relative; }
 .bce-cc-btn {
   position: absolute;
-  left: 6px;
-  bottom: 6px;
-  width: 28px;
-  height: 28px;
+  right: -36px;
+  bottom: 4px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   border: 1px solid rgba(0, 0, 0, 0.15);
   background: #fff;
@@ -154,14 +157,22 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  opacity: 0.55;
+  opacity: 0.7;
   transition: transform 0.1s ease, opacity 0.1s ease;
+}
+/* fallback (composer slot not found): bottom-left of the pane, translucent */
+.bce-cc-host > .bce-cc-btn {
+  right: auto;
+  left: 6px;
+  bottom: 6px;
+  opacity: 0.55;
 }
 /* the main record view scrolls with the window, so its button pins to the
    viewport instead (visually the pane's bottom-left, above Basecamp's bar) —
    there's open margin there, so it can stay full-size and solid */
 .bce-cc-btn[data-mode="main"] {
   position: fixed;
+  right: auto;
   left: 18px;
   bottom: 58px;
   width: 36px;
@@ -171,6 +182,10 @@
 }
 .bce-cc-btn:hover { transform: scale(1.1); opacity: 1; }
 .bce-cc-btn img { width: 70%; height: 70%; display: block; }
+/* a worker launched from this conversation is actively working */
+@keyframes bce-spin { to { transform: rotate(360deg); } }
+.bce-cc-btn[data-busy] { opacity: 1; }
+.bce-cc-btn[data-busy] img { animation: bce-spin 1.2s linear infinite; }
 
 .bce-ccpop {
   position: fixed;
