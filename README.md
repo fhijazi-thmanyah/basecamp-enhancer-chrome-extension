@@ -1,4 +1,4 @@
-# Basecamp Enhancer
+# <img src="icons/icon128.png" width="48" align="center" alt="Basecamp Enhancer icon" /> Basecamp Enhancer
 
 A tiny Chrome extension (Manifest V3) that runs **only on Basecamp** and adds five quality-of-life fixes:
 
