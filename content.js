@@ -768,8 +768,33 @@
     if (settings.ccLaunch) applyCcLaunchers();
   }
 
+  // Theme: our overlays can't use Canvas/CanvasText (Dark Reader can't rewrite
+  // system colors) OR hardcoded light colors (Basecamp's native dark theme
+  // keeps its menu items' light text → light-on-white). So detect the page's
+  // REAL background luminance at runtime — it reflects whatever produced it
+  // (Basecamp dark theme, Dark Reader, anything) — and flip .bce-dark on
+  // <html> to select the overlay palette.
+  function pageIsDark() {
+    let el = document.body || document.documentElement;
+    let bg = "";
+    while (el) {
+      bg = getComputedStyle(el).backgroundColor;
+      if (bg && bg !== "transparent" && !/rgba\(\s*0,\s*0,\s*0,\s*0\s*\)/.test(bg)) break;
+      el = el.parentElement;
+    }
+    const m = bg && bg.match(/\d+(\.\d+)?/g);
+    if (!m || m.length < 3) return false;
+    const [r, g, b] = m.map(Number);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b < 128;
+  }
+
+  function syncTheme() {
+    document.documentElement.classList.toggle("bce-dark", pageIsDark());
+  }
+
   // Apply or revert each feature across the whole page to match settings.
   function reconcile() {
+    syncTheme();
     if (settings.timeLabels) decorateAllTimes(); else removeTimeLabels();
     if (settings.rtl) applyAutoDir(); else removeAutoDir();
     if (settings.inlineReactions) applyInlineReactions(); else removeReactionBars();

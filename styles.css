@@ -47,7 +47,9 @@
 .bce-anchor { position: relative; }
 /* NOTE: concrete colors, not Canvas/CanvasText system keywords — Dark Reader
    can't rewrite system colors (white bg survives while text goes light =
-   unreadable). Plain hex inverts cleanly under Dark Reader. */
+   unreadable). Plain hex inverts cleanly under Dark Reader. Basecamp's NATIVE
+   dark theme is handled separately: content.js samples the page's real bg
+   luminance and toggles .bce-dark on <html> (palette at the end of this file). */
 .bce-hoverbar {
   position: absolute;
   display: flex;
@@ -284,3 +286,24 @@
 .bce-cc-dot[data-status="unreachable"] { background: #d33; }
 .bce-cc-web { color: #1f6feb; text-decoration: none; font-size: 11px; flex: none; }
 .bce-cc-web:hover { text-decoration: underline; }
+
+/* Dark page — Basecamp's native dark theme OR Dark Reader. Detected at
+   runtime by sampling the page's real background luminance (content.js
+   toggles .bce-dark on <html>); a class beats media queries here because
+   neither Basecamp's theme toggle nor Dark Reader flips prefers-color-scheme. */
+.bce-dark .bce-hoverbar,
+.bce-dark .bce-ccpop,
+.bce-dark .bce-cc-btn {
+  background: #262b2d;
+  color: #e8e8e8;
+  border-color: rgba(255, 255, 255, 0.16);
+}
+.bce-dark .bce-ccpop__prompt {
+  background: #1d2224;
+  color: #e8e8e8;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.bce-dark .bce-ccpop__segbtn { border-color: rgba(255, 255, 255, 0.25); }
+.bce-dark .bce-ccpop__tail { background: rgba(255, 255, 255, 0.08); }
+.bce-dark .bce-hoverbar .action-sheet__action:hover,
+.bce-dark .bce-react-btn:hover { background: rgba(255, 255, 255, 0.12) !important; }
