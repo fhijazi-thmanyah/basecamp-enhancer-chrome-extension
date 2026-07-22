@@ -17,6 +17,7 @@
     rtl: true,
     inlineReactions: true,
     inlineMenus: true,
+    ccLaunch: true,
     reactionEmojis: DEFAULT_EMOJIS,
   };
   let settings = { ...DEFAULTS };
@@ -428,6 +429,267 @@
     document.querySelectorAll(".bce-hoverbar[data-menu]").forEach((b) => b.removeAttribute("data-menu"));
   }
 
+  // ---- Feature 5: Claude Code launcher (HQ workers) ----------------------
+
+  // A floating button (bottom-right, always reachable — no scrolling) that
+  // launches a Claude Code worker on the local HQ server to handle/watch the
+  // CURRENT Basecamp conversation. All HQ traffic goes through the background
+  // service worker (see background.js — content scripts are CORS-bound to the
+  // page origin). HQ's spawn returns the tmux session name synchronously, but
+  // a 200 only means tmux accepted the command — claude is typed into a
+  // surviving shell, so we must poll /api/workers afterwards to confirm the
+  // worker actually came up (and to show live status in the tray).
+
+  const CC_WORKDIR = "~/Projects/thmanyah.d/career-coach";
+  const CC_LOOPS = [
+    { key: "oneshot", label: "One-shot" },
+    { key: "15min", label: "15 min" },
+    { key: "60min", label: "60 min" },
+  ];
+  const CC_SESSIONS_MAX = 10;
+
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // Only the typed prompt + this page's URL + our fixed template go to the
+  // worker — never text scraped from the page (it runs unattended with
+  // --dangerously-skip-permissions; page content is untrusted).
+  function ccPrompt(typed, loop) {
+    const watch = loop === "oneshot"
+      ? "Handle it once — do NOT set up a watch loop."
+      : `Then /loop ${loop} — keep watching this thread and respond as needed.`;
+    return (
+      `${typed.trim()}\n\n` +
+      `Basecamp thread: ${location.href}\n\n` +
+      `Use /basecamp to read this thread. ${watch} ` +
+      `If you have no idea what to do, or you're afraid of making a mistake, ` +
+      `send Faris a macOS notification (osascript -e 'display notification "…" with title "CC worker"') and hold off.`
+    );
+  }
+
+  function hqSend(msg) {
+    return chrome.runtime.sendMessage(msg).catch((e) => ({ ok: false, error: String(e && e.message || e) }));
+  }
+
+  // Launched-session tray, persisted so it survives navigations/reloads.
+  function loadCcSessions() {
+    return new Promise((r) => chrome.storage.local.get({ ccSessions: [] }, (v) => r(v.ccSessions)));
+  }
+  function saveCcSessions(list) {
+    chrome.storage.local.set({ ccSessions: list.slice(0, CC_SESSIONS_MAX) });
+  }
+
+  // Confirm a just-spawned worker really started: claude should take over the
+  // pane within a few seconds (status becomes working/waiting). A pane still
+  // at the shell ("done") after the grace period, or a vanished session, means
+  // the launch failed — surface HQ's pane tail so the error is visible.
+  async function ccConfirmLaunch(session) {
+    const started = Date.now();
+    while (Date.now() - started < 20000) {
+      await sleep(2500);
+      const r = await hqSend({ type: "hqWorkers" });
+      if (!r.ok) return { ok: false, reason: r.error };
+      const w = (r.workers || []).find((x) => x.session === session);
+      if (!w) return { ok: false, reason: "session disappeared — launch failed" };
+      // Any live-claude status counts as launched — a fast worker can already
+      // be idle (finished thinking) by the first poll. Only "done" (pane back
+      // at a bare shell) means claude isn't running.
+      if (w.status === "working" || w.status === "waiting" || w.status === "idle") return { ok: true, worker: w };
+      // "done" = pane is a bare shell; normal in the first seconds before
+      // claude starts, a failed launch if it persists past the grace period.
+      if (w.status === "done" && Date.now() - started > 8000) {
+        return { ok: false, reason: "claude exited immediately", tail: w.tail };
+      }
+    }
+    return { ok: false, reason: "worker never became active (timeout)" };
+  }
+
+  // --- UI ---
+
+  function ccIcon() {
+    // Claude-ish starburst mark (inline SVG, no external assets).
+    const NS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("class", "bce-cc-icon");
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * 2 * Math.PI;
+      const r0 = 3.2, r1 = i % 3 === 0 ? 10.5 : 8;
+      const line = document.createElementNS(NS, "line");
+      line.setAttribute("x1", (12 + r0 * Math.cos(a)).toFixed(2));
+      line.setAttribute("y1", (12 + r0 * Math.sin(a)).toFixed(2));
+      line.setAttribute("x2", (12 + r1 * Math.cos(a)).toFixed(2));
+      line.setAttribute("y2", (12 + r1 * Math.sin(a)).toFixed(2));
+      svg.appendChild(line);
+    }
+    return svg;
+  }
+
+  function ccEl(tag, cls, text) {
+    const el = document.createElement(tag);
+    if (cls) el.className = cls;
+    if (text != null) el.textContent = text;
+    return el;
+  }
+
+  let ccPollTimer = null;
+
+  function ccBuildPopover() {
+    const pop = ccEl("div", "bce-ccpop");
+
+    const head = ccEl("div", "bce-ccpop__head", "Launch Claude Code on this conversation");
+    pop.appendChild(head);
+
+    const ta = ccEl("textarea", "bce-ccpop__prompt");
+    ta.placeholder = "What should Claude do here?";
+    ta.rows = 3;
+    pop.appendChild(ta);
+
+    const seg = ccEl("div", "bce-ccpop__seg");
+    for (const { key, label } of CC_LOOPS) {
+      const b = ccEl("button", "bce-ccpop__segbtn", label);
+      b.type = "button";
+      b.dataset.loop = key;
+      if (key === "15min") b.dataset.on = "1"; // default
+      b.addEventListener("click", () => {
+        seg.querySelectorAll("[data-on]").forEach((x) => delete x.dataset.on);
+        b.dataset.on = "1";
+      });
+      seg.appendChild(b);
+    }
+    pop.appendChild(seg);
+
+    const launch = ccEl("button", "bce-ccpop__launch", "Launch");
+    launch.type = "button";
+    pop.appendChild(launch);
+
+    const status = ccEl("div", "bce-ccpop__status");
+    pop.appendChild(status);
+
+    const tray = ccEl("div", "bce-ccpop__tray");
+    pop.appendChild(tray);
+
+    function setStatus(kind, text, tail) {
+      status.dataset.kind = kind || "";
+      status.textContent = text || "";
+      if (tail) {
+        const pre = ccEl("pre", "bce-ccpop__tail", tail);
+        status.appendChild(pre);
+      }
+    }
+
+    launch.addEventListener("click", async () => {
+      const typed = ta.value.trim();
+      if (!typed) { setStatus("err", "Write a prompt first."); ta.focus(); return; }
+      const loop = seg.querySelector("[data-on]").dataset.loop;
+      launch.disabled = true;
+      setStatus("busy", "Spawning worker…");
+      const title = "bc " + typed.slice(0, 40);
+      const r = await hqSend({ type: "hqSpawn", title, prompt: ccPrompt(typed, loop), workdir: CC_WORKDIR });
+      if (!r.ok) { setStatus("err", "Launch failed: " + r.error); launch.disabled = false; return; }
+      const sessions = await loadCcSessions();
+      sessions.unshift({ session: r.session, title, url: location.href, ts: Date.now() });
+      saveCcSessions(sessions);
+      renderTray();
+      setStatus("busy", `${r.session} spawned — confirming claude started…`);
+      const verdict = await ccConfirmLaunch(r.session);
+      if (verdict.ok) {
+        setStatus("ok", `${r.session} is ${verdict.worker.status} — follow it in HQ or below.`);
+        ta.value = "";
+      } else {
+        setStatus("err", `${r.session} FAILED to start: ${verdict.reason}`, verdict.tail);
+      }
+      launch.disabled = false;
+    });
+
+    // --- tray: launched sessions with live status ---
+
+    async function renderTray() {
+      const sessions = await loadCcSessions();
+      tray.textContent = "";
+      if (!sessions.length) return;
+      const head2 = ccEl("div", "bce-ccpop__trayhead");
+      head2.appendChild(ccEl("span", null, "Launched sessions"));
+      const hqLink = ccEl("a", "bce-ccpop__hqlink", "Open HQ ↗");
+      hqLink.href = "http://127.0.0.1:8377";
+      hqLink.target = "_blank";
+      head2.appendChild(hqLink);
+      tray.appendChild(head2);
+      for (const s of sessions) {
+        const row = ccEl("div", "bce-cc-sess");
+        row.dataset.session = s.session;
+        const dot = ccEl("span", "bce-cc-dot");
+        dot.dataset.status = "unknown";
+        row.appendChild(dot);
+        const info = ccEl("span", "bce-cc-info");
+        info.appendChild(ccEl("code", null, s.session));
+        info.appendChild(ccEl("small", null, s.title));
+        row.appendChild(info);
+        const x = ccEl("button", "bce-cc-x", "✕");
+        x.type = "button";
+        x.title = "Remove from list (doesn't kill the session)";
+        x.addEventListener("click", async () => {
+          saveCcSessions((await loadCcSessions()).filter((v) => v.session !== s.session));
+          row.remove();
+        });
+        row.appendChild(x);
+        tray.appendChild(row);
+      }
+      pollTray();
+    }
+
+    async function pollTray() {
+      const rows = [...tray.querySelectorAll(".bce-cc-sess")];
+      if (!rows.length) return;
+      const r = await hqSend({ type: "hqWorkers" });
+      for (const row of rows) {
+        const dot = row.querySelector(".bce-cc-dot");
+        if (!r.ok) { dot.dataset.status = "unreachable"; dot.title = r.error; continue; }
+        const w = (r.workers || []).find((x) => x.session === row.dataset.session);
+        dot.dataset.status = w ? w.status : "gone";
+        dot.title = w ? `${w.status}${w.tail ? "\n\n" + w.tail : ""}` : "session no longer exists";
+      }
+    }
+
+    pop.renderTray = renderTray;
+    pop.pollTray = pollTray;
+    return pop;
+  }
+
+  function ensureCcFab() {
+    if (!document.body) return;
+    let fab = document.getElementById("bce-cc-fab");
+    if (!fab) {
+      fab = ccEl("button", null);
+      fab.id = "bce-cc-fab";
+      fab.type = "button";
+      fab.title = "Launch Claude Code on this conversation";
+      fab.appendChild(ccIcon());
+      fab.addEventListener("click", () => {
+        let pop = document.getElementById("bce-cc-pop");
+        if (pop) { // toggle closed
+          pop.remove();
+          clearInterval(ccPollTimer);
+          ccPollTimer = null;
+          return;
+        }
+        pop = ccBuildPopover();
+        pop.id = "bce-cc-pop";
+        document.body.appendChild(pop);
+        pop.renderTray();
+        ccPollTimer = setInterval(() => pop.pollTray(), 5000);
+        pop.querySelector(".bce-ccpop__prompt").focus();
+      });
+      document.body.appendChild(fab);
+    }
+  }
+
+  function removeCcFab() {
+    document.getElementById("bce-cc-fab")?.remove();
+    document.getElementById("bce-cc-pop")?.remove();
+    clearInterval(ccPollTimer);
+    ccPollTimer = null;
+  }
+
   // ---- Wiring -----------------------------------------------------------
 
   // Enhance a freshly added subtree, honoring current settings.
@@ -447,6 +709,9 @@
     if (settings.inlineReactions) applyInlineReactions(); else removeReactionBars();
     if (settings.inlineReactions || settings.inlineMenus) applyHoverBars(); else removeHoverBars();
     if (!settings.inlineMenus) removeHoverMenus();
+    // FAB is global (not per-subtree); Turbo body swaps drop it, and the
+    // turbo:* → reconcile listeners bring it right back.
+    if (settings.ccLaunch) ensureCcFab(); else removeCcFab();
   }
 
   // Run as early as possible (document_start): the observer below catches most
