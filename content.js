@@ -354,6 +354,11 @@
       anchor.classList.add("bce-anchor");
       bar = document.createElement("div");
       bar.className = "bce-hoverbar";
+      // Chat bubbles align by sender (mine right, others left), so mirror the bar
+      // to the bubble's outer-top corner — it grows inward instead of running off
+      // the edge. Comments are full-width; they stay top-right (no attr).
+      if (rec.matches("turbo-frame.chat-line") && me)
+        bar.dataset.mine = String(rec.getAttribute("data-creator-id") === me.content);
       anchor.appendChild(bar);
     }
     return bar;
