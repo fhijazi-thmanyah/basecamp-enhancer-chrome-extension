@@ -190,11 +190,14 @@
   // your boosts is added to the DOM, promote its emoji. Gated to a moment after
   // each (Turbo) load so the boosts already on the page — and page-to-page
   // navigations — don't flood the MRU with old history.
-  const me = document.querySelector('meta[name="current-person-id"]');
+  // Looked up lazily on every use: we run at document_start, before <head>
+  // exists — capturing the meta once would pin it to null forever.
+  const meId = () => document.querySelector('meta[name="current-person-id"]')?.content;
   let captureReadyAt = Date.now() + 2000;
   function captureRecentBoosts(root) {
+    const me = meId();
     if (!me || Date.now() < captureReadyAt || !root.querySelectorAll) return;
-    const sel = `.boost[data-creator-id="${me.content}"]`;
+    const sel = `.boost[data-creator-id="${me}"]`;
     if (root.matches && root.matches(sel)) recordEmojiUse(boostEmoji(root));
     root.querySelectorAll(sel).forEach((b) => recordEmojiUse(boostEmoji(b)));
   }
@@ -358,8 +361,8 @@
       // Chat bubbles align by sender (mine right, others left), so mirror the bar
       // to the bubble's outer-top corner — it grows inward instead of running off
       // the edge. Comments are full-width; they stay top-right (no attr).
-      if (rec.matches("turbo-frame.chat-line") && me)
-        bar.dataset.mine = String(rec.getAttribute("data-creator-id") === me.content);
+      if (rec.matches("turbo-frame.chat-line") && meId())
+        bar.dataset.mine = String(rec.getAttribute("data-creator-id") === meId());
       anchor.appendChild(bar);
     }
     return bar;
@@ -515,7 +518,9 @@
 
   function ccPaneUrl(host) {
     const tf = host.closest("turbo-frame[src]");
-    if (tf) return new URL(tf.getAttribute("src"), location.href).href;
+    // sidebar frames use /my/sidebar/circles/<id>, which 302s to the canonical
+    // /circles/<id> — hand workers the canonical form directly
+    if (tf) return new URL(tf.getAttribute("src"), location.href).href.replace("/my/sidebar/", "/");
     const a = host.querySelector('a[href*="/circles/"], a[href*="/chats/"]');
     if (a && a.href) return a.href;
     return location.href;
