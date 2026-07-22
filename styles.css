@@ -88,8 +88,10 @@
   flex-wrap: wrap;
   white-space: normal;
 }
-[data-bce-rec]:hover .bce-hoverbar,
-[data-bce-rec]:focus-within .bce-hoverbar {
+/* Visibility is JS-managed (.bce-open set by content.js on exactly ONE bar
+   per mouseover) rather than :hover — :hover sometimes sticks when a stream
+   re-render swallows the mouseleave, and it can't guarantee a single open bar. */
+.bce-hoverbar.bce-open {
   opacity: 1;
   pointer-events: auto;
 }
@@ -131,13 +133,32 @@
   border-radius: 6px;
 }
 .bce-hoverbar .action-sheet__divider { display: none !important; }
-/* keep the nested "Bubble up" sub-menu a proper popup (don't spill it inline) */
+/* items the user toggled off in the popup's menu editor (attribute, not an
+   inline style — the display:inline-flex !important above would beat that) */
+.bce-hoverbar .bce-menu > [data-bce-hidden] { display: none !important; }
+/* keep the nested "Bubble up" sub-menu a proper popup (don't spill it inline).
+   Its options load into a turbo-frame INSIDE .action-sheet__content — force
+   the whole chain to block/full-width rows or the late-loading items lay out
+   as inline-flex strips and escape the popup box. */
 .bce-hoverbar .action-sheet--bubble-up { position: relative; flex: 0 0 auto; }
 .bce-hoverbar .action-sheet--bubble-up .action-sheet__content {
   position: absolute !important;
-  flex-flow: column !important;
+  display: block !important;
+  width: max-content !important;
+  min-width: 180px;
+  max-width: 280px;
 }
-.bce-hoverbar .action-sheet--bubble-up .action-sheet__content .action-sheet__action { width: 100% !important; }
+.bce-hoverbar .action-sheet--bubble-up .action-sheet__content turbo-frame { display: block !important; }
+.bce-hoverbar .action-sheet--bubble-up .action-sheet__content .action-sheet__action {
+  display: flex !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  justify-content: space-between;
+}
+/* our display !important overrides defeat the native hiding of a CLOSED
+   <details> (the "Pick a date" pane) — its submit button rendered as a stray
+   floating box. Restore details semantics inside the pill. */
+.bce-hoverbar details:not([open]) > *:not(summary) { display: none !important; }
 
 /* Claude Code launcher — one button per open conversation pane (the main
    card/todo/message view AND each chat/ping window), pinned bottom-LEFT of its

@@ -12,6 +12,20 @@
   "use strict";
 
   const DEFAULT_EMOJIS = ["👍", "👏", "🙌", "❤️", "😂", "😊", "🎉", "🚀"];
+  // Inline-menu items in display order. `key` is matched (prefix, lowercase)
+  // against the lifted item's text, so "notified" catches "Notified 3 people".
+  // Items Basecamp adds that we don't know about render last, enabled.
+  const DEFAULT_MENU_ITEMS = [
+    { key: "reply", label: "Reply", on: true },
+    { key: "edit", label: "Edit", on: true },
+    { key: "bookmark", label: "Bookmark", on: true },
+    { key: "bubble up", label: "Bubble up", on: true },
+    { key: "copy link", label: "Copy link", on: true },
+    { key: "download", label: "Download attachments", on: true },
+    { key: "notified", label: "Notified…", on: true },
+    { key: "delete", label: "Delete", on: true },
+    { key: "put in the trash", label: "Put in the trash", on: true },
+  ];
   const DEFAULTS = {
     timeLabels: true,
     rtl: true,
@@ -19,13 +33,16 @@
     inlineMenus: true,
     ccLaunch: true,
     reactionEmojis: DEFAULT_EMOJIS,
+    menuItems: DEFAULT_MENU_ITEMS,
   };
   let settings = { ...DEFAULTS };
 
   // A "record" = a hoverable message: a chat line/ping or a comment. Both get
   // the unified hover bar (reactions + action menu), and their standalone
-  // reaction bars are suppressed in favor of it.
-  const RECORD_SEL = "turbo-frame.chat-line, article.thread-entry.recording";
+  // reaction bars are suppressed in favor of it. NOT the comment composer —
+  // Basecamp marks the "Add your comment…" editor as a thread-entry.recording
+  // too (thread-entry--form), and a draft must never grow reactions/menus.
+  const RECORD_SEL = "turbo-frame.chat-line, article.thread-entry.recording:not(.thread-entry--form)";
 
   const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "always" });
 
@@ -381,8 +398,9 @@
       const menu = document.createElement("span");
       menu.className = "bce-menu";
       for (const n of [...root.cloneNode(true).childNodes]) {
-        // drop the native reaction row, menu dividers, and mobile-app-only dupes
-        if (n.nodeType === 1 && n.matches(".chat-line-reactions, .action-sheet__divider, .app-ios__show, .app-android__show")) continue;
+        // drop the native reaction row, menu dividers, mobile-app-only dupes,
+        // and informational rows ("The window to edit… closed") — noise inline
+        if (n.nodeType === 1 && n.matches(".chat-line-reactions, .action-sheet__divider, .app-ios__show, .app-android__show, .action-sheet__action--info")) continue;
         menu.appendChild(n); // keep controllers (copy-to-clipboard/bookmarks/bubble-up) intact
       }
       // popup-positioning targets belong to the un-cloned parent sheet — drop them
@@ -390,10 +408,29 @@
         n.removeAttribute("data-orientation-target");
         n.removeAttribute("data-horizontal-offset-target");
       });
+      applyMenuPrefs(menu);
       bar.appendChild(menu);
       bar.dataset.menu = "1";
     } catch (e) {
       delete bar.dataset.menu; // let it retry on the next pass
+    }
+  }
+
+  // Apply the user's configured item set/order (settings.menuItems) to a
+  // lifted menu: hide items toggled off (data-bce-hidden — an attribute, since
+  // our display:inline-flex !important would beat an inline style), and order
+  // the rest via flex `order` (the wrappers ARE the bar's flex items thanks to
+  // display:contents on .bce-menu; reactions keep the default order 0).
+  function menuItemKey(child) {
+    const act = child.matches(".action-sheet__action") ? child : child.querySelector(".action-sheet__action");
+    return ((act || child).textContent || "").trim().toLowerCase();
+  }
+  function applyMenuPrefs(menu) {
+    const prefs = settings.menuItems || [];
+    for (const child of menu.children) {
+      const idx = prefs.findIndex((p) => menuItemKey(child).startsWith(p.key));
+      child.toggleAttribute("data-bce-hidden", idx >= 0 && !prefs[idx].on);
+      child.style.order = String(idx >= 0 ? idx + 1 : prefs.length + 1); // unknown → last
     }
   }
 
@@ -406,9 +443,38 @@
     }
   }, { rootMargin: "300px" });
 
+  // Exactly ONE bar may be open at a time, managed in JS instead of CSS
+  // :hover — pure :hover sometimes sticks (a stream re-render under the
+  // pointer swallows the mouseleave) and lets a second bar coexist. Every
+  // mouseover re-derives which record is hovered and closes all other bars,
+  // so any stuck state self-heals on the next pointer move.
+  let openRec = null;
+  function setOpenRec(rec) {
+    if (rec === openRec && (!rec || rec.querySelector(".bce-hoverbar.bce-open"))) return;
+    document.querySelectorAll(".bce-hoverbar.bce-open").forEach((b) => b.classList.remove("bce-open"));
+    openRec = rec;
+    const bar = rec && rec.querySelector(".bce-hoverbar");
+    if (bar) bar.classList.add("bce-open");
+  }
+  document.addEventListener("mouseover", (e) => {
+    const t = e.target;
+    setOpenRec(t instanceof Element ? t.closest("[data-bce-rec]") : null);
+  }, true);
+  document.documentElement.addEventListener("mouseleave", () => setOpenRec(null));
+
   // Build/refresh hover bars across a subtree: reactions (if enabled, leading)
   // plus a lazily-loaded menu (if enabled). Each part is gated by its own toggle.
   function applyHoverBars(root = document) {
+    // enforce the invariant: anything tagged as a record that no longer
+    // matches RECORD_SEL (e.g. the comment composer, which older versions
+    // tagged) loses its bar and markers
+    document.querySelectorAll("[data-bce-rec]").forEach((r) => {
+      if (r.matches(RECORD_SEL)) return;
+      r.removeAttribute("data-bce-rec");
+      r.querySelectorAll(".bce-hoverbar").forEach((b) => b.remove());
+      r.querySelectorAll(".bce-anchor").forEach((a) => a.classList.remove("bce-anchor"));
+      if (r.classList) r.classList.remove("bce-anchor");
+    });
     const recs = [];
     if (root.matches && root.matches(RECORD_SEL)) recs.push(root);
     if (root.querySelectorAll) recs.push(...root.querySelectorAll(RECORD_SEL));
@@ -417,10 +483,14 @@
       if (settings.inlineReactions) setReactionBar(bar, true);
       else { const rx = bar.querySelector(":scope > .bce-reactions"); if (rx) rx.remove(); }
       if (settings.inlineMenus) menuObserver.observe(rec);
+      const m = bar.querySelector(":scope > .bce-menu");
+      if (m) applyMenuPrefs(m); // reconcile picks up menuItems changes live
+      if (rec === openRec) bar.classList.add("bce-open"); // survive re-renders
     }
   }
 
   function removeHoverBars() {
+    setOpenRec(null);
     document.querySelectorAll(".bce-hoverbar").forEach((b) => b.remove());
     document.querySelectorAll("[data-bce-rec]").forEach((r) => r.removeAttribute("data-bce-rec"));
     document.querySelectorAll(".bce-anchor").forEach((a) => a.classList.remove("bce-anchor"));

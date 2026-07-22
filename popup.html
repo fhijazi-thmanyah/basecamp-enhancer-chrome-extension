@@ -59,12 +59,24 @@
         margin-top: 6px;
       }
       #reactCount { opacity: 0.55; }
-      #resetEmojis {
+      #resetEmojis, #resetMenu {
         background: none; border: none; padding: 0; cursor: pointer;
         color: #1f6feb; font: inherit; font-size: 12px;
       }
-      #resetEmojis:hover { text-decoration: underline; }
+      #resetEmojis:hover, #resetMenu:hover { text-decoration: underline; }
       .disabled { opacity: 0.4; pointer-events: none; }
+
+      /* menu-item editor: draggable rows */
+      #menuList { list-style: none; margin: 0; padding: 0; }
+      #menuList li {
+        display: flex; align-items: center; gap: 8px;
+        padding: 4px 4px; border-radius: 6px; cursor: grab;
+      }
+      #menuList li:hover { background: rgba(127, 127, 127, 0.12); }
+      #menuList li.dragging { opacity: 0.35; }
+      #menuList .grip { opacity: 0.4; font-size: 11px; cursor: grab; }
+      #menuList input { margin: 0; }
+      #menuList .label { flex: 1; }
     </style>
   </head>
   <body>
@@ -101,6 +113,15 @@
         <span class="slider"></span>
       </span>
     </label>
+
+    <div class="subrow" id="menuEditor">
+      <small>Menu items — drag to reorder, untick to hide</small>
+      <ul id="menuList"></ul>
+      <div class="subrow__foot">
+        <span></span>
+        <button type="button" id="resetMenu">Reset to defaults</button>
+      </div>
+    </div>
 
     <label class="row" for="ccLaunch">
       <span class="label">Claude Code launcher<small>floating button → spawn an HQ worker on this convo</small></span>
