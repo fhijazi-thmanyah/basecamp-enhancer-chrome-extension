@@ -422,6 +422,23 @@
     }
   }
 
+  // The "Bubble up" item's sub-sheet is ITSELF a lazy turbo-frame — empty in
+  // our clone, so opening it showed a big blank box. Fetch its schedule presets
+  // (Now / Tomorrow / This weekend / …) once, lazily, the first time the user
+  // reaches for bubble-up. Same reused-DOM principle: the loaded preset
+  // buttons submit through Basecamp's own Turbo.
+  async function loadBubbleUp(sheet) {
+    const frame = sheet.querySelector("turbo-frame.action-sheet__lazy-options[src]");
+    if (!frame || frame.dataset.bceLoaded) return;
+    frame.dataset.bceLoaded = "1";
+    try {
+      const html = await fetch(frame.getAttribute("src"), { headers: { "Accept": "text/html", "Turbo-Frame": frame.id } }).then((r) => r.text());
+      const loaded = new DOMParser().parseFromString(html, "text/html").getElementById(frame.id);
+      if (loaded) frame.replaceChildren(...loaded.childNodes);
+      else delete frame.dataset.bceLoaded;
+    } catch (e) { delete frame.dataset.bceLoaded; }
+  }
+
   // Apply the user's configured item set/order (settings.menuItems) to a
   // lifted menu: hide items toggled off (data-bce-hidden — an attribute, since
   // our display:inline-flex !important would beat an inline style), and order
@@ -476,8 +493,13 @@
   // anchor, so hovering the bar (which overlaps above the bubble) still counts.
   document.addEventListener("mouseover", (e) => {
     const t = e.target;
-    const anchor = t instanceof Element ? t.closest(".bce-anchor") : null;
+    if (!(t instanceof Element)) return setOpenRec(null);
+    const anchor = t.closest(".bce-anchor");
     setOpenRec(anchor ? anchor.closest("[data-bce-rec]") : null);
+    // Bubble-up now opens on hover (CSS) — load its presets the moment the
+    // pointer reaches it, so it's never a blank box.
+    const bu = t.closest(".bce-hoverbar .action-sheet--bubble-up");
+    if (bu) loadBubbleUp(bu);
   }, true);
   document.documentElement.addEventListener("mouseleave", () => setOpenRec(null));
 

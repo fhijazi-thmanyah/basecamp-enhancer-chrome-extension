@@ -154,7 +154,11 @@
    a full-width row. */
 .bce-hoverbar .action-sheet--bubble-up { position: relative; flex: 0 0 auto; }
 .bce-hoverbar .action-sheet--bubble-up .action-sheet__content { display: none !important; }
-.bce-hoverbar .action-sheet--bubble-up.bce-sub-open .action-sheet__content {
+/* Opens on EITHER hover (the .action-sheet__content is a descendant of the
+   hovered .action-sheet--bubble-up, so there's no dead gap) OR a pinning click
+   (.bce-sub-open). Closed state stays display:none — the safe default. */
+.bce-hoverbar .action-sheet--bubble-up:hover > .action-sheet__content,
+.bce-hoverbar .action-sheet--bubble-up.bce-sub-open > .action-sheet__content {
   display: block !important;
   position: absolute !important;
   top: 100%;
@@ -168,8 +172,10 @@
   pointer-events: auto !important;
   z-index: 5;
 }
-.bce-hoverbar .action-sheet--bubble-up.bce-sub-open .action-sheet__content turbo-frame { display: block !important; }
-.bce-hoverbar .action-sheet--bubble-up.bce-sub-open .action-sheet__content .action-sheet__action {
+.bce-hoverbar .action-sheet--bubble-up:hover > .action-sheet__content turbo-frame,
+.bce-hoverbar .action-sheet--bubble-up.bce-sub-open > .action-sheet__content turbo-frame { display: block !important; }
+.bce-hoverbar .action-sheet--bubble-up:hover > .action-sheet__content .action-sheet__action,
+.bce-hoverbar .action-sheet--bubble-up.bce-sub-open > .action-sheet__content .action-sheet__action {
   display: flex !important;
   width: 100% !important;
   box-sizing: border-box !important;
