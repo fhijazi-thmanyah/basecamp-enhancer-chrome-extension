@@ -543,14 +543,17 @@
   // Only the typed prompt + the pane's URL + our fixed template go to the
   // worker — never text scraped from the page (it runs unattended with
   // --dangerously-skip-permissions; page content is untrusted).
-  function ccPrompt(typed, loop, url) {
+  function ccPrompt(typed, loop, url, replyWhenDone) {
     const watch = loop === "oneshot"
       ? "Handle it once — do NOT set up a watch loop."
       : `Then /loop ${loop} — keep watching this thread and respond as needed.`;
+    const reply = replyWhenDone
+      ? ` When the task is done, reply to the thread and @-mention the people relevant/related to the task.`
+      : "";
     return (
       `${typed.trim()}\n\n` +
       `Basecamp thread: ${url}\n\n` +
-      `Use /basecamp to read this thread. ${watch} ` +
+      `Use /basecamp to read this thread. ${watch}${reply} ` +
       `If you have no idea what to do, or you're afraid of making a mistake, ` +
       `send Faris a macOS notification (osascript -e 'display notification "…" with title "CC worker"') and hold off.`
     );
@@ -691,6 +694,14 @@
     watchRow.appendChild(seg);
     pop.appendChild(watchRow);
 
+    // "Reply when done" — appends an instruction to reply + @-mention people
+    const replyRow = ccEl("label", "bce-ccpop__reply");
+    const replyCb = ccEl("input");
+    replyCb.type = "checkbox";
+    replyRow.appendChild(replyCb);
+    replyRow.appendChild(ccEl("span", null, "Reply when done (@-mention relevant people)"));
+    pop.appendChild(replyRow);
+
     const launch = ccEl("button", "bce-ccpop__launch", "Launch");
     launch.type = "button";
     pop.appendChild(launch);
@@ -726,7 +737,7 @@
       launch.disabled = true;
       setStatus("busy", "Spawning worker…");
       const title = "bc " + typed.slice(0, 40);
-      const r = await hqSend({ type: "hqSpawn", title, prompt: ccPrompt(typed, loop, url), workdir: CC_WORKDIR });
+      const r = await hqSend({ type: "hqSpawn", title, prompt: ccPrompt(typed, loop, url, replyCb.checked), workdir: CC_WORKDIR });
       if (!r.ok) { setStatus("err", "Launch failed: " + r.error); launch.disabled = false; return; }
       const sessions = await loadCcSessions();
       sessions.unshift({ session: r.session, title, url, ts: Date.now() });

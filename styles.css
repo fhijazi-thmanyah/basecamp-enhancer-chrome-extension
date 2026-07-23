@@ -279,6 +279,15 @@ form.bce-cc-beside > .relative { position: relative; }
   gap: 8px;
 }
 .bce-ccpop__watchlabel { font-size: 12px; opacity: 0.8; white-space: nowrap; }
+.bce-ccpop__reply {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: -2px;
+}
+.bce-ccpop__reply input { margin: 0; flex: none; cursor: pointer; }
 .bce-ccpop__seg { display: flex; gap: 4px; flex: 1; }
 .bce-ccpop__segbtn {
   flex: 1;
