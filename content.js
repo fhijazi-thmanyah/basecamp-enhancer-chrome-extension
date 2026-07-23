@@ -11,6 +11,12 @@
 (() => {
   "use strict";
 
+  // After the extension is reloaded/updated, content scripts already injected
+  // in open tabs are orphaned: their `chrome.*` calls throw "Extension context
+  // invalidated" (synchronously). Gate every chrome call on this so orphaned
+  // pages fail quietly instead of spamming the console until the tab reloads.
+  const ctxAlive = () => { try { return !!(chrome.runtime && chrome.runtime.id); } catch { return false; } };
+
   const DEFAULT_EMOJIS = ["👍", "👏", "🙌", "❤️", "😂", "😊", "🎉", "🚀"];
   // Inline-menu items in display order. `key` is matched (prefix, lowercase)
   // against the lifted item's text, so "notified" catches "Notified 3 people".
@@ -191,7 +197,7 @@
     if (!emoji || cur[0] === emoji) return; // already newest → nothing to reorder
     const next = [emoji, ...cur.filter((e) => e !== emoji)].slice(0, MRU_MAX);
     settings.reactionEmojis = next;
-    chrome.storage.sync.set({ reactionEmojis: next }); // → onChanged → bars rebuild
+    if (ctxAlive()) chrome.storage.sync.set({ reactionEmojis: next }); // → onChanged → bars rebuild
   }
 
   // The leading grapheme of a boost's text is its content; keep it only if it's
@@ -572,7 +578,13 @@
   }
 
   function hqSend(msg) {
-    return chrome.runtime.sendMessage(msg).catch((e) => ({ ok: false, error: String(e && e.message || e) }));
+    if (!ctxAlive()) return Promise.resolve({ ok: false, error: "extension reloaded — refresh the tab" });
+    try {
+      return chrome.runtime.sendMessage(msg).catch((e) => ({ ok: false, error: String(e && e.message || e) }));
+    } catch (e) {
+      // sendMessage throws synchronously once the context is gone.
+      return Promise.resolve({ ok: false, error: String(e && e.message || e) });
+    }
   }
 
   // Two URLs point at the same conversation if they differ only by fragment
@@ -584,7 +596,7 @@
     return new Promise((r) => chrome.storage.local.get({ ccSessions: [] }, (v) => r(v.ccSessions)));
   }
   function saveCcSessions(list) {
-    chrome.storage.local.set({ ccSessions: list.slice(0, CC_SESSIONS_MAX) });
+    if (ctxAlive()) chrome.storage.local.set({ ccSessions: list.slice(0, CC_SESSIONS_MAX) });
   }
 
   // Confirm a just-spawned worker really started: claude should take over the
@@ -1030,6 +1042,7 @@
   // Basecamp is navigation-heavy (Turbo) and streams DOM updates, so watch for
   // new nodes and enhance only the added subtrees — continuously.
   const observer = new MutationObserver((mutations) => {
+    if (!ctxAlive()) return teardown(); // orphaned after a reload — stop churning
     for (const m of mutations) {
       for (const node of m.addedNodes) {
         if (node.nodeType !== 1) continue;
@@ -1039,6 +1052,16 @@
     }
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
+
+  // Once the extension context dies (reload/update), silence this orphaned
+  // instance: disconnect the observer and clear the intervals so it stops
+  // firing chrome calls. A tab refresh loads the fresh content script.
+  function teardown() {
+    observer.disconnect();
+    clearInterval(labelTimer);
+    clearInterval(ccBusyTimer);
+    clearInterval(ccPollTimer);
+  }
 
   // Turbo re-renders (cable-stream updates, morph refreshes, frame loads) can
   // strip our badges/bars from *inside* an element that stays put — the
@@ -1063,5 +1086,5 @@
   window.addEventListener("load", () => enhance(), { once: true });
 
   // Keep relative labels fresh (e.g. "1 minute ago" -> "2 minutes ago").
-  setInterval(() => { if (settings.timeLabels) decorateAllTimes(); }, 60 * 1000);
+  const labelTimer = setInterval(() => { if (settings.timeLabels) decorateAllTimes(); }, 60 * 1000);
 })();
