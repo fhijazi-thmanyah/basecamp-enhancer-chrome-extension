@@ -439,6 +439,22 @@
     } catch (e) { delete frame.dataset.bceLoaded; }
   }
 
+  // The bubble-up sub-sheet is position:fixed (styles.css) so it can be clamped
+  // to the viewport: pinned right under the bubble-up button, its right edge
+  // aligned to the button but shifted left/right so it never spills off screen
+  // (a narrow sidebar ping panel used to push the right-anchored popup off the
+  // left edge). Called when the sheet opens (hover or pin).
+  function positionSubMenu(sheet) {
+    const content = sheet.querySelector(":scope > .action-sheet__content");
+    if (!content) return;
+    const btn = sheet.querySelector(":scope > .action-sheet__action") || sheet;
+    const r = btn.getBoundingClientRect();
+    const w = content.offsetWidth || 200;
+    const left = Math.max(8, Math.min(Math.round(r.right - w), window.innerWidth - w - 8));
+    content.style.top = Math.round(r.bottom) + "px"; // touch the button — no hover gap
+    content.style.left = left + "px";
+  }
+
   // Apply the user's configured item set/order (settings.menuItems) to a
   // lifted menu: hide items toggled off (data-bce-hidden — an attribute, since
   // our display:inline-flex !important would beat an inline style), and order
@@ -497,9 +513,9 @@
     const anchor = t.closest(".bce-anchor");
     setOpenRec(anchor ? anchor.closest("[data-bce-rec]") : null);
     // Bubble-up now opens on hover (CSS) — load its presets the moment the
-    // pointer reaches it, so it's never a blank box.
+    // pointer reaches it (never a blank box) and clamp the popup into view.
     const bu = t.closest(".bce-hoverbar .action-sheet--bubble-up");
-    if (bu) loadBubbleUp(bu);
+    if (bu) { positionSubMenu(bu); loadBubbleUp(bu).then(() => positionSubMenu(bu)); }
   }, true);
   document.documentElement.addEventListener("mouseleave", () => setOpenRec(null));
 
@@ -515,7 +531,7 @@
     });
     if (!sheet) return;
     if (t.closest(".action-sheet__content")) sheet.classList.remove("bce-sub-open"); // preset chosen → collapse
-    else sheet.classList.toggle("bce-sub-open"); // the trigger
+    else if (sheet.classList.toggle("bce-sub-open")) { loadBubbleUp(sheet); positionSubMenu(sheet); } // pinned open
   }, true);
 
   // Build/refresh hover bars across a subtree: reactions (if enabled, leading)

@@ -159,21 +159,21 @@
 .bce-hoverbar .action-sheet--bubble-up .action-sheet__content { display: none !important; }
 /* Opens on EITHER hover (the .action-sheet__content is a descendant of the
    hovered .action-sheet--bubble-up, so there's no dead gap) OR a pinning click
-   (.bce-sub-open). Closed state stays display:none — the safe default. */
+   (.bce-sub-open). Closed state stays display:none — the safe default.
+   position:FIXED (not absolute) so content.js's positionSubMenu can clamp it
+   into the viewport — a narrow sidebar ping panel used to push the right-
+   anchored popup off the left edge (v1.12.6). JS sets top/left. */
 .bce-hoverbar .action-sheet--bubble-up:hover > .action-sheet__content,
 .bce-hoverbar .action-sheet--bubble-up.bce-sub-open > .action-sheet__content {
   display: block !important;
-  position: absolute !important;
-  top: 100%;
-  right: 0;
-  left: auto;
+  position: fixed !important;
   width: max-content !important;
   min-width: 180px;
   max-width: 280px;
   opacity: 1 !important;
   visibility: visible !important;
   pointer-events: auto !important;
-  z-index: 5;
+  z-index: 2147483001;
 }
 .bce-hoverbar .action-sheet--bubble-up:hover > .action-sheet__content turbo-frame,
 .bce-hoverbar .action-sheet--bubble-up.bce-sub-open > .action-sheet__content turbo-frame { display: block !important; }
