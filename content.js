@@ -947,10 +947,10 @@
           slot.closest("form").classList.add("bce-cc-beside");
           slot.appendChild(btn);
         } else {
-          // main record view: a bookmark-style tab in the left gutter. It's
-          // `position:fixed` with its `top` set by ccPositionMain on scroll so
-          // it follows the pane's title then clamps to the top (sticky doesn't
-          // paint here — an ancestor in the scroll chain breaks it).
+          // main record view: a bookmark-style tab in the left gutter, pinned
+          // low (~25% up from the bottom) by ccPositionMain — `position:fixed`
+          // so it's always visible (sticky doesn't paint here — an ancestor in
+          // the scroll chain breaks it).
           pane.host.appendChild(btn);
         }
       }
@@ -965,11 +965,13 @@
     }
   }
 
-  // Position the main-view button: fixed in the left gutter, its `top` tracking
-  // the pane's title until it would scroll off, then clamped to CC_MAIN_CLAMP —
-  // "follows then clamps" like a sticky tab, but painted reliably (sticky fails
-  // to paint inside Basecamp's scroll container).
-  const CC_MAIN_CLAMP = 76;
+  // Position the main-view button: `position:fixed` in the left gutter, pinned
+  // low — ~25% up from the bottom of the viewport — so it sits near where the
+  // hand rests and stays out of the title. Fixed to the viewport, so it's
+  // always visible without tracking the scroll (sticky fails to paint inside
+  // Basecamp's scroll container; fixed+JS is reliable). Left edge follows the
+  // pane's gutter, recomputed on resize.
+  const CC_MAIN_BOTTOM = 0.25; // fraction of viewport height above the bottom
   let ccMainRAF = 0;
   function ccPositionMain() {
     ccMainRAF = 0;
@@ -978,10 +980,9 @@
     if (!btn || !main) return;
     const m = main.getBoundingClientRect();
     btn.style.left = Math.max(6, Math.round(m.left) - 46) + "px";
-    btn.style.top = Math.max(CC_MAIN_CLAMP, Math.round(m.top) + 40) + "px";
+    btn.style.top = Math.round(window.innerHeight * (1 - CC_MAIN_BOTTOM)) + "px";
   }
   function ccQueueMain() { if (!ccMainRAF) ccMainRAF = requestAnimationFrame(ccPositionMain); }
-  window.addEventListener("scroll", ccQueueMain, { passive: true });
   window.addEventListener("resize", ccQueueMain);
 
   function removeCcLaunchers() {
