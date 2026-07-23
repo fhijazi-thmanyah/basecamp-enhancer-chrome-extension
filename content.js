@@ -428,9 +428,15 @@
   function applyMenuPrefs(menu) {
     const prefs = settings.menuItems || [];
     for (const child of menu.children) {
-      const idx = prefs.findIndex((p) => menuItemKey(child).startsWith(p.key));
+      const key = menuItemKey(child);
+      const idx = prefs.findIndex((p) => key.startsWith(p.key));
       child.toggleAttribute("data-bce-hidden", idx >= 0 && !prefs[idx].on);
       child.style.order = String(idx >= 0 ? idx + 1 : prefs.length + 1); // unknown → last
+      // items render icon-only (label hidden by CSS) — expose the label as a
+      // native tooltip. Use the clean prefs label; re-set if a lazy turbo-frame
+      // (Bookmark/Notified) re-rendered and dropped it. `title` on the action.
+      const act = child.matches(".action-sheet__action") ? child : child.querySelector(".action-sheet__action");
+      if (act && !act.title) act.title = idx >= 0 ? prefs[idx].label : key;
     }
   }
 
@@ -901,6 +907,10 @@
           slot.closest("form").classList.add("bce-cc-beside");
           slot.appendChild(btn);
         } else {
+          // main record view: a bookmark-style tab in the left gutter. It's
+          // `position:fixed` with its `top` set by ccPositionMain on scroll so
+          // it follows the pane's title then clamps to the top (sticky doesn't
+          // paint here — an ancestor in the scroll chain breaks it).
           pane.host.appendChild(btn);
         }
       }
@@ -908,11 +918,31 @@
       btn.dataset.mode = pane.mode;
       btn.dataset.url = pane.url;
     }
+    ccPositionMain();
     if (!ccBusyTimer) {
       ccBusyTimer = setInterval(ccSyncBusy, 10000);
       ccSyncBusy();
     }
   }
+
+  // Position the main-view button: fixed in the left gutter, its `top` tracking
+  // the pane's title until it would scroll off, then clamped to CC_MAIN_CLAMP —
+  // "follows then clamps" like a sticky tab, but painted reliably (sticky fails
+  // to paint inside Basecamp's scroll container).
+  const CC_MAIN_CLAMP = 76;
+  let ccMainRAF = 0;
+  function ccPositionMain() {
+    ccMainRAF = 0;
+    const btn = document.querySelector('.bce-cc-btn[data-mode="main"]');
+    const main = btn && (btn.closest("main") || document.querySelector("main"));
+    if (!btn || !main) return;
+    const m = main.getBoundingClientRect();
+    btn.style.left = Math.max(6, Math.round(m.left) - 46) + "px";
+    btn.style.top = Math.max(CC_MAIN_CLAMP, Math.round(m.top) + 40) + "px";
+  }
+  function ccQueueMain() { if (!ccMainRAF) ccMainRAF = requestAnimationFrame(ccPositionMain); }
+  window.addEventListener("scroll", ccQueueMain, { passive: true });
+  window.addEventListener("resize", ccQueueMain);
 
   function removeCcLaunchers() {
     document.querySelectorAll(".bce-cc-btn").forEach((b) => b.remove());

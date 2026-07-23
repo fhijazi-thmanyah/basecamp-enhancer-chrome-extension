@@ -132,6 +132,14 @@
   background: rgba(127, 127, 127, 0.14) !important;
   border-radius: 6px;
 }
+/* menu items render ICON-ONLY to save space; the label is a native tooltip
+   (title set in applyMenuPrefs). font-size:0 collapses the bare-text-node
+   labels, the svg keeps an explicit size. Sub-menu (bubble-up) presets are
+   restored to text below — you need to read "Now"/"Tomorrow"/etc. */
+.bce-hoverbar .bce-menu .action-sheet__action { font-size: 0 !important; gap: 0 !important; }
+.bce-hoverbar .bce-menu .action-sheet__action svg { width: 16px !important; height: 16px !important; }
+.bce-hoverbar .action-sheet__content .action-sheet__action { font-size: 12px !important; }
+.bce-hoverbar .action-sheet__content .action-sheet__action svg { width: auto !important; height: auto !important; }
 .bce-hoverbar .action-sheet__divider { display: none !important; }
 /* items the user toggled off in the popup's menu editor (attribute, not an
    inline style — the display:inline-flex !important above would beat that) */
@@ -225,17 +233,17 @@ form.bce-cc-beside > .relative { position: relative; }
   bottom: 6px;
   opacity: 0.55;
 }
-/* the main record view scrolls with the window, so its button pins to the
-   viewport — in the left gutter just outside the content pane, up near the
-   record's title (the left margin is empty there), full-size and solid */
+/* main record view: a bookmark-style tab in the left gutter. `position:fixed`
+   with `left`/`top` set by ccPositionMain — it tracks the pane's title then
+   clamps to the top as you scroll (always visible), like Basecamp's side tab.
+   A rounded tab, not a FAB circle. (left/top come from JS.) */
 .bce-cc-btn[data-mode="main"] {
   position: fixed;
   right: auto;
-  left: 80px;
-  top: 150px;
   bottom: auto;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   opacity: 1;
   z-index: 2147483000;
 }
