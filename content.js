@@ -746,7 +746,11 @@
         dot.dataset.status = "unknown";
         row.appendChild(dot);
         const info = ccEl("span", "bce-cc-info");
-        info.appendChild(ccEl("code", null, s.session));
+        // the session name itself becomes the claude.ai link once the
+        // remote-control bridge connects (pollTray sets href from web_url)
+        const name = ccEl("a", "bce-cc-name");
+        name.appendChild(ccEl("code", null, s.session));
+        info.appendChild(name);
         info.appendChild(ccEl("small", null, s.title));
         row.appendChild(info);
         const x = ccEl("button", "bce-cc-x", "✕");
@@ -787,13 +791,12 @@
         dot.dataset.status = w ? w.status : "gone";
         dot.title = w ? `${w.status}${w.tail ? "\n\n" + w.tail : ""}` : "session no longer exists";
         // once the worker's remote-control bridge connects, HQ exposes its
-        // claude.ai URL — surface it as an "open in web Claude Code" link
-        if (w && w.web_url && !row.querySelector(".bce-cc-web")) {
-          const a = ccEl("a", "bce-cc-web", "web ↗");
-          a.href = w.web_url;
-          a.target = "_blank";
-          a.title = "Open this session in claude.ai Claude Code";
-          row.insertBefore(a, row.querySelector(".bce-cc-x"));
+        // claude.ai URL — the session name becomes the link
+        const name = row.querySelector(".bce-cc-name");
+        if (w && w.web_url && name && !name.href) {
+          name.href = w.web_url;
+          name.target = "_blank";
+          name.title = "Open this session in claude.ai Claude Code";
         }
       }
     }

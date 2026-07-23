@@ -328,8 +328,10 @@ form.bce-cc-beside > .relative { position: relative; }
 .bce-cc-dot[data-status="done"] { background: #1f6feb; }
 .bce-cc-dot[data-status="gone"],
 .bce-cc-dot[data-status="unreachable"] { background: #d33; }
-.bce-cc-web { color: #1f6feb; text-decoration: none; font-size: 11px; flex: none; }
-.bce-cc-web:hover { text-decoration: underline; }
+/* session name: plain text until the claude.ai web_url arrives, then a link */
+.bce-cc-name { color: inherit; text-decoration: none; }
+.bce-cc-name[href] { color: #1f6feb; cursor: pointer; }
+.bce-cc-name[href]:hover { text-decoration: underline; }
 
 /* Dark page — Basecamp's native dark theme OR Dark Reader. Detected at
    runtime by sampling the page's real background luminance (content.js
