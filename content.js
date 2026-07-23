@@ -457,9 +457,15 @@
     const bar = rec && rec.querySelector(".bce-hoverbar");
     if (bar) bar.classList.add("bce-open");
   }
+  // Trigger off the `.bce-anchor` (the bubble for chat, the record for
+  // comments) — NOT the whole record. A chat-line turbo-frame spans the full
+  // row width, so keying off it opened the bar whenever the pointer was at the
+  // bubble's Y even out in the empty margin. The bar is a descendant of the
+  // anchor, so hovering the bar (which overlaps above the bubble) still counts.
   document.addEventListener("mouseover", (e) => {
     const t = e.target;
-    setOpenRec(t instanceof Element ? t.closest("[data-bce-rec]") : null);
+    const anchor = t instanceof Element ? t.closest(".bce-anchor") : null;
+    setOpenRec(anchor ? anchor.closest("[data-bce-rec]") : null);
   }, true);
   document.documentElement.addEventListener("mouseleave", () => setOpenRec(null));
 
