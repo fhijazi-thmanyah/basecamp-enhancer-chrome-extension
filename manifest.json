@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Basecamp Enhancer",
-  "version": "1.12.0",
+  "version": "1.12.1",
   "description": "Basecamp quality-of-life: relative timestamps, RTL fix, a Google-Chat–style hover bar with one-click emoji reactions plus the full action menu, and a Claude Code launcher that spawns an HQ worker to handle/watch the current conversation. Toggle each from the toolbar.",
   "permissions": [
     "storage"

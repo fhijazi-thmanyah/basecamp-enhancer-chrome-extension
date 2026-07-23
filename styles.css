@@ -379,6 +379,9 @@ form.bce-cc-beside > .relative { position: relative; }
 .bce-cc-name { color: inherit; text-decoration: none; }
 .bce-cc-name[href] { color: #1f6feb; cursor: pointer; }
 .bce-cc-name[href]:hover { text-decoration: underline; }
+/* per-session HQ deep link */
+.bce-cc-hq { color: #1f6feb; text-decoration: none; font-size: 11px; flex: none; }
+.bce-cc-hq:hover { text-decoration: underline; }
 
 /* Dark page — Basecamp's native dark theme OR Dark Reader. Detected at
    runtime by sampling the page's real background luminance (content.js

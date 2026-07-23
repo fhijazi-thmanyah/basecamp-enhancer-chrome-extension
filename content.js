@@ -793,6 +793,12 @@
         info.appendChild(name);
         info.appendChild(ccEl("small", null, s.title));
         row.appendChild(info);
+        // per-session HQ deep link → scrolls to & flashes THIS worker's card
+        const hq = ccEl("a", "bce-cc-hq", "HQ ↗");
+        hq.href = "http://127.0.0.1:8377/#w-" + encodeURIComponent(s.session);
+        hq.target = "_blank";
+        hq.title = "Open this session in the HQ dashboard";
+        row.appendChild(hq);
         const x = ccEl("button", "bce-cc-x", "✕");
         x.type = "button";
         x.title = "Kill this session (tmux + claude) and remove it";
