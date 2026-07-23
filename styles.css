@@ -138,8 +138,11 @@
    restored to text below — you need to read "Now"/"Tomorrow"/etc. */
 .bce-hoverbar .bce-menu .action-sheet__action { font-size: 0 !important; gap: 0 !important; }
 .bce-hoverbar .bce-menu .action-sheet__action svg { width: 16px !important; height: 16px !important; }
-.bce-hoverbar .action-sheet__content .action-sheet__action { font-size: 12px !important; }
-.bce-hoverbar .action-sheet__content .action-sheet__action svg { width: auto !important; height: auto !important; }
+.bce-hoverbar .action-sheet__content .action-sheet__action { font-size: 12px !important; gap: 8px !important; }
+/* Give the preset icon an explicit size — `auto` on these dimensionless SVGs
+   balloons to the 300x150 intrinsic default (v1.12.3 rendered them as giant
+   wavy strokes filling the popup). */
+.bce-hoverbar .action-sheet__content .action-sheet__action svg { width: 18px !important; height: 18px !important; flex: 0 0 auto !important; }
 .bce-hoverbar .action-sheet__divider { display: none !important; }
 /* items the user toggled off in the popup's menu editor (attribute, not an
    inline style — the display:inline-flex !important above would beat that) */
