@@ -452,6 +452,7 @@
   function setOpenRec(rec) {
     if (rec === openRec && (!rec || rec.querySelector(".bce-hoverbar.bce-open"))) return;
     document.querySelectorAll(".bce-hoverbar.bce-open").forEach((b) => b.classList.remove("bce-open"));
+    document.querySelectorAll(".bce-sub-open").forEach((s) => s.classList.remove("bce-sub-open"));
     openRec = rec;
     const bar = rec && rec.querySelector(".bce-hoverbar");
     if (bar) bar.classList.add("bce-open");
@@ -461,6 +462,21 @@
     setOpenRec(t instanceof Element ? t.closest("[data-bce-rec]") : null);
   }, true);
   document.documentElement.addEventListener("mouseleave", () => setOpenRec(null));
+
+  // The bubble-up sub-menu's closed state is OURS (display:none — see
+  // styles.css: Basecamp's collapse can't survive our display overrides, and
+  // an opacity-hidden clone left invisible-but-clickable schedule buttons).
+  // Toggle .bce-sub-open around Basecamp's own Stimulus click handling.
+  document.addEventListener("click", (e) => {
+    const t = e.target instanceof Element ? e.target : null;
+    const sheet = t && t.closest(".bce-hoverbar .action-sheet--bubble-up");
+    document.querySelectorAll(".bce-sub-open").forEach((s) => {
+      if (s !== sheet) s.classList.remove("bce-sub-open");
+    });
+    if (!sheet) return;
+    if (t.closest(".action-sheet__content")) sheet.classList.remove("bce-sub-open"); // preset chosen → collapse
+    else sheet.classList.toggle("bce-sub-open"); // the trigger
+  }, true);
 
   // Build/refresh hover bars across a subtree: reactions (if enabled, leading)
   // plus a lazily-loaded menu (if enabled). Each part is gated by its own toggle.

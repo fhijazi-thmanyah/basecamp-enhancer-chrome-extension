@@ -136,20 +136,32 @@
 /* items the user toggled off in the popup's menu editor (attribute, not an
    inline style — the display:inline-flex !important above would beat that) */
 .bce-hoverbar .bce-menu > [data-bce-hidden] { display: none !important; }
-/* keep the nested "Bubble up" sub-menu a proper popup (don't spill it inline).
-   Its options load into a turbo-frame INSIDE .action-sheet__content — force
-   the whole chain to block/full-width rows or the late-loading items lay out
-   as inline-flex strips and escape the popup box. */
+/* The nested "Bubble up" sub-menu. DANGER ZONE: its content ships in the
+   clone COLLAPSED, and Basecamp's hiding does not survive our display
+   !important overrides — v1.9.0 rendered the schedule presets as
+   INVISIBLE-BUT-CLICKABLE boxes under the pill (clicking "empty" space could
+   bubble the message up). So the closed state is OURS: display:none until
+   content.js toggles .bce-sub-open on the sheet (around Basecamp's own
+   Stimulus click handling), then a contained block popup with every option
+   a full-width row. */
 .bce-hoverbar .action-sheet--bubble-up { position: relative; flex: 0 0 auto; }
-.bce-hoverbar .action-sheet--bubble-up .action-sheet__content {
-  position: absolute !important;
+.bce-hoverbar .action-sheet--bubble-up .action-sheet__content { display: none !important; }
+.bce-hoverbar .action-sheet--bubble-up.bce-sub-open .action-sheet__content {
   display: block !important;
+  position: absolute !important;
+  top: 100%;
+  right: 0;
+  left: auto;
   width: max-content !important;
   min-width: 180px;
   max-width: 280px;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  z-index: 5;
 }
-.bce-hoverbar .action-sheet--bubble-up .action-sheet__content turbo-frame { display: block !important; }
-.bce-hoverbar .action-sheet--bubble-up .action-sheet__content .action-sheet__action {
+.bce-hoverbar .action-sheet--bubble-up.bce-sub-open .action-sheet__content turbo-frame { display: block !important; }
+.bce-hoverbar .action-sheet--bubble-up.bce-sub-open .action-sheet__content .action-sheet__action {
   display: flex !important;
   width: 100% !important;
   box-sizing: border-box !important;
