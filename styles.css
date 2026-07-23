@@ -177,9 +177,26 @@
    pane so it stays put while the convo scrolls. Concrete colors only (no
    Canvas/CanvasText): Dark Reader can invert hex, not system keywords. */
 .bce-cc-host { position: relative; }
-/* chat/ping panes: the button lives INSIDE the composer, in a gutter to the
-   RIGHT of the message input — .bce-cc-beside on the form shrinks the input
-   to free the space, and the button anchors to the editor wrapper */
+/* chat/ping panes: the button mounts as the last icon in the composer's tool
+   row (emoji/attach/mic/format) — a plain inline icon, so it can never overlap
+   the format button the way an absolutely-positioned one did in the maximized
+   room. Transparent to sit among the monochrome tools. */
+.chat__tools > .bce-cc-btn {
+  position: static !important;
+  right: auto !important;
+  left: auto !important;
+  bottom: auto !important;
+  width: 26px !important;
+  height: 26px !important;
+  margin: 0 0 0 4px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  opacity: 0.85 !important;
+}
+.chat__tools > .bce-cc-btn:hover { opacity: 1 !important; }
+.chat__tools > .bce-cc-btn img { width: 100% !important; height: 100% !important; }
+/* fallback beside-the-input placement (composer has no tool row) */
 form.bce-cc-beside { margin-right: 38px; }
 form.bce-cc-beside > .relative { position: relative; }
 .bce-cc-btn {
@@ -209,13 +226,14 @@ form.bce-cc-beside > .relative { position: relative; }
   opacity: 0.55;
 }
 /* the main record view scrolls with the window, so its button pins to the
-   viewport instead (visually the pane's bottom-left, above Basecamp's bar) —
-   there's open margin there, so it can stay full-size and solid */
+   viewport — in the left gutter just outside the content pane, up near the
+   record's title (the left margin is empty there), full-size and solid */
 .bce-cc-btn[data-mode="main"] {
   position: fixed;
   right: auto;
-  left: 18px;
-  bottom: 58px;
+  left: 80px;
+  top: 150px;
+  bottom: auto;
   width: 36px;
   height: 36px;
   opacity: 1;

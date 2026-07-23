@@ -669,7 +669,7 @@
     pop.appendChild(head);
 
     const ta = ccEl("textarea", "bce-ccpop__prompt");
-    ta.placeholder = "What should Claude do here?  (⌘⏎ to launch)";
+    ta.placeholder = "What should Claude do here?  (Enter to launch · Shift+Enter = new line)";
     ta.rows = 3;
     pop.appendChild(ta);
 
@@ -710,9 +710,10 @@
       }
     }
 
-    // ⌘/Ctrl+Enter launches, Escape closes (Esc works anywhere in the popover)
+    // Enter launches, Shift+Enter inserts a newline (⌘/Ctrl+Enter also works);
+    // Escape closes (Esc works anywhere in the popover)
     ta.addEventListener("keydown", (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); launch.click(); }
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); launch.click(); }
     });
     pop.addEventListener("keydown", (e) => {
       if (e.key === "Escape") { e.stopPropagation(); ccClosePopover(); }
@@ -870,11 +871,16 @@
         img.alt = "Claude Code";
         btn.appendChild(img);
         btn.addEventListener("click", () => ccTogglePopover(btn));
-        // chat/ping panes: into the composer, in a gutter to the RIGHT of the
-        // message input (.bce-cc-beside shrinks the input to free the space);
-        // main view (and fallback if Basecamp restructures): pinned to the host
-        const slot = pane.mode === "pane" && pane.host.querySelector(".chat__footer form.chat__form > .relative");
-        if (slot) {
+        // chat/ping panes: mount as the last icon in the composer's tool row
+        // (emoji/attach/mic/format) — collision-proof in both the sidebar and
+        // the maximized room, where `.chat__tools` floats over the input's
+        // right edge and an absolute button would overlap the format button.
+        // Fallbacks: the input's `.relative` gutter, then the pane host.
+        const tools = pane.mode === "pane" && pane.host.querySelector(".chat__footer .chat__tools");
+        const slot = !tools && pane.mode === "pane" && pane.host.querySelector(".chat__footer form.chat__form > .relative");
+        if (tools) {
+          tools.appendChild(btn);
+        } else if (slot) {
           slot.closest("form").classList.add("bce-cc-beside");
           slot.appendChild(btn);
         } else {
