@@ -160,20 +160,26 @@
 /* Opens on EITHER hover (the .action-sheet__content is a descendant of the
    hovered .action-sheet--bubble-up, so there's no dead gap) OR a pinning click
    (.bce-sub-open). Closed state stays display:none — the safe default.
-   position:FIXED (not absolute) so content.js's positionSubMenu can clamp it
-   into the viewport — a narrow sidebar ping panel used to push the right-
-   anchored popup off the left edge (v1.12.6). JS sets top/left. */
+   `top:100%` keeps it touching the button (absolute, relative to the sheet —
+   NOT fixed: a fixed popup is positioned against the nearest *transformed*
+   ancestor, and the comment pill's translateY(-50%) threw it off-screen).
+   content.js's positionSubMenu sets `left` (a sheet-relative offset) to clamp
+   it into the viewport — a narrow sidebar ping panel used to push the right-
+   anchored popup off the left edge (v1.12.6). */
 .bce-hoverbar .action-sheet--bubble-up:hover > .action-sheet__content,
 .bce-hoverbar .action-sheet--bubble-up.bce-sub-open > .action-sheet__content {
   display: block !important;
-  position: fixed !important;
+  position: absolute !important;
+  top: 100%;
+  left: 0;
+  right: auto;
   width: max-content !important;
   min-width: 180px;
   max-width: 280px;
   opacity: 1 !important;
   visibility: visible !important;
   pointer-events: auto !important;
-  z-index: 2147483001;
+  z-index: 30;
 }
 .bce-hoverbar .action-sheet--bubble-up:hover > .action-sheet__content turbo-frame,
 .bce-hoverbar .action-sheet--bubble-up.bce-sub-open > .action-sheet__content turbo-frame { display: block !important; }

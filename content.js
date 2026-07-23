@@ -439,20 +439,22 @@
     } catch (e) { delete frame.dataset.bceLoaded; }
   }
 
-  // The bubble-up sub-sheet is position:fixed (styles.css) so it can be clamped
-  // to the viewport: pinned right under the bubble-up button, its right edge
-  // aligned to the button but shifted left/right so it never spills off screen
-  // (a narrow sidebar ping panel used to push the right-anchored popup off the
-  // left edge). Called when the sheet opens (hover or pin).
+  // Clamp the bubble-up sub-sheet into the viewport. It's position:absolute
+  // (relative to the sheet, which stays put under the button via CSS top:100%),
+  // so we only set the horizontal `left` — a SHEET-RELATIVE offset. We pick the
+  // desired viewport-left (right-aligned to the sheet, clamped on-screen) and
+  // subtract the sheet's own viewport-left to convert it to that offset. Using
+  // absolute (not fixed) sidesteps the transform-containing-block trap: the
+  // comment pill's translateY(-50%) would make a fixed popup anchor to the pill,
+  // not the viewport, and it flew off-screen.
   function positionSubMenu(sheet) {
     const content = sheet.querySelector(":scope > .action-sheet__content");
     if (!content) return;
-    const btn = sheet.querySelector(":scope > .action-sheet__action") || sheet;
-    const r = btn.getBoundingClientRect();
+    const r = sheet.getBoundingClientRect();
     const w = content.offsetWidth || 200;
-    const left = Math.max(8, Math.min(Math.round(r.right - w), window.innerWidth - w - 8));
-    content.style.top = Math.round(r.bottom) + "px"; // touch the button — no hover gap
-    content.style.left = left + "px";
+    const desired = Math.max(8, Math.min(Math.round(r.right - w), window.innerWidth - w - 8));
+    content.style.left = Math.round(desired - r.left) + "px";
+    content.style.right = "auto";
   }
 
   // Apply the user's configured item set/order (settings.menuItems) to a
