@@ -544,6 +544,10 @@
     return chrome.runtime.sendMessage(msg).catch((e) => ({ ok: false, error: String(e && e.message || e) }));
   }
 
+  // Two URLs point at the same conversation if they differ only by fragment
+  // (main-view URLs can carry #__recording_… anchors).
+  const sameConvo = (a, b) => String(a).split("#")[0] === String(b).split("#")[0];
+
   // Launched-session tray, persisted so it survives navigations/reloads.
   function loadCcSessions() {
     return new Promise((r) => chrome.storage.local.get({ ccSessions: [] }, (v) => r(v.ccSessions)));
@@ -637,7 +641,7 @@
       }
     }
     btns.forEach((b) => {
-      if (busy.has(b.dataset.url)) b.dataset.busy = "1";
+      if ([...busy].some((u) => sameConvo(u, b.dataset.url))) b.dataset.busy = "1";
       else delete b.dataset.busy;
     });
   }
@@ -722,14 +726,14 @@
       launch.disabled = false;
     });
 
-    // --- tray: launched sessions with live status ---
+    // --- tray: sessions launched on THIS conversation, with live status ---
 
     async function renderTray() {
-      const sessions = await loadCcSessions();
+      const sessions = (await loadCcSessions()).filter((s) => sameConvo(s.url, url));
       tray.textContent = "";
       if (!sessions.length) return;
       const head2 = ccEl("div", "bce-ccpop__trayhead");
-      head2.appendChild(ccEl("span", null, "Launched sessions"));
+      head2.appendChild(ccEl("span", null, "Sessions on this conversation"));
       const hqLink = ccEl("a", "bce-ccpop__hqlink", "Open HQ ↗");
       hqLink.href = "http://127.0.0.1:8377";
       hqLink.target = "_blank";
