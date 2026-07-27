@@ -186,44 +186,12 @@
   // href encodes the record's boostable_gid. That single, uniform anchor is all
   // we need to post a boost — no "…" menu, no popover.
 
-  // The bar shows your most-recently-used reaction emoji, newest first. Any
-  // reaction you make — through our bar OR Basecamp's own picker — bubbles that
-  // emoji to the front (`reactionEmojis` doubles as the MRU cache, capped here).
-  const MRU_MAX = 8;
-  const graphemes = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+  // The bar shows the reaction emoji exactly as ordered in the popup editor —
+  // a fixed, user-controlled set (no recently-used reordering).
 
-  function recordEmojiUse(emoji) {
-    const cur = settings.reactionEmojis;
-    if (!emoji || cur[0] === emoji) return; // already newest → nothing to reorder
-    const next = [emoji, ...cur.filter((e) => e !== emoji)].slice(0, MRU_MAX);
-    settings.reactionEmojis = next;
-    if (ctxAlive()) chrome.storage.sync.set({ reactionEmojis: next }); // → onChanged → bars rebuild
-  }
-
-  // The leading grapheme of a boost's text is its content; keep it only if it's
-  // an emoji (skip text boosts, which don't belong in an emoji bar).
-  function boostEmoji(boostEl) {
-    for (const { segment } of graphemes.segment(boostEl.textContent.trim())) {
-      return /\p{Extended_Pictographic}/u.test(segment) ? segment : null;
-    }
-    return null;
-  }
-
-  // Learn from reactions *you* make via Basecamp's native picker: when one of
-  // your boosts is added to the DOM, promote its emoji. Gated to a moment after
-  // each (Turbo) load so the boosts already on the page — and page-to-page
-  // navigations — don't flood the MRU with old history.
-  // Looked up lazily on every use: we run at document_start, before <head>
-  // exists — capturing the meta once would pin it to null forever.
+  // meId is looked up lazily on every use: we run at document_start, before
+  // <head> exists — capturing the meta once would pin it to null forever.
   const meId = () => document.querySelector('meta[name="current-person-id"]')?.content;
-  let captureReadyAt = Date.now() + 2000;
-  function captureRecentBoosts(root) {
-    const me = meId();
-    if (!me || Date.now() < captureReadyAt || !root.querySelectorAll) return;
-    const sel = `.boost[data-creator-id="${me}"]`;
-    if (root.matches && root.matches(sel)) recordEmojiUse(boostEmoji(root));
-    root.querySelectorAll(sel).forEach((b) => recordEmojiUse(boostEmoji(b)));
-  }
 
   // Derive the POST endpoint + gid from the "+" link's href. The href is
   //   /<acct>/buckets/<bucket>/boosts/new?boost[boostable_gid]=<base64 gid>
@@ -313,10 +281,7 @@
           "boost[content]": emoji,
         }),
       });
-      if (res.ok) {
-        applyBoostResponse(await res.text());
-        recordEmojiUse(emoji);
-      }
+      if (res.ok) applyBoostResponse(await res.text());
     } catch (e) {
       /* network hiccup — the button re-enables and the user can retry */
     } finally {
@@ -1088,7 +1053,6 @@
       for (const node of m.addedNodes) {
         if (node.nodeType !== 1) continue;
         enhance(node);
-        if (settings.inlineReactions) captureRecentBoosts(node);
       }
     }
   });
@@ -1117,10 +1081,6 @@
   }
   ["turbo:load", "turbo:render", "turbo:frame-render", "turbo:before-stream-render"]
     .forEach((ev) => document.addEventListener(ev, scheduleRestore, true));
-
-  // Each navigation renders a fresh page of existing boosts — re-arm the MRU
-  // capture gate so that history doesn't count as "recently used".
-  document.addEventListener("turbo:load", () => { captureReadyAt = Date.now() + 2000; }, true);
 
   // Full sweeps at the usual readiness milestones.
   document.addEventListener("DOMContentLoaded", () => enhance(), { once: true });

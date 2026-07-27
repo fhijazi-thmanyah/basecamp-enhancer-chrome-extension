@@ -13,6 +13,16 @@
   unicode-bidi: plaintext;
 }
 
+/* Chat composer RTL clearance. The composer's tool row (emoji/attach/mic/format
+   + our added CC button) floats over the input's right edge; Basecamp reserves
+   ~140px of right padding for it, but with our button the row reaches ~165px in.
+   In LTR that's the far end of a line (rarely hit); in RTL the text START lands
+   there and the first words tuck under the icons and look clipped. When the
+   composer holds RTL text, give it enough right padding to clear the whole row. */
+.chat__footer .lexxy-editor__content:has(p:dir(rtl)) {
+  padding-right: 172px !important;
+}
+
 /* Inline reaction bar — quick-boost emoji injected into each .boosts container.
    Sits next to Basecamp's own "+" new-boost button; inherits the container's
    visibility (always shown on cards/messages, hover-revealed on chat lines). */
