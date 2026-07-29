@@ -13,13 +13,15 @@
   unicode-bidi: plaintext;
 }
 
-/* Chat composer RTL clearance. The composer's tool row (emoji/attach/mic/format
-   + our added CC button) floats over the input's right edge; Basecamp reserves
-   ~140px of right padding for it, but with our button the row reaches ~165px in.
-   In LTR that's the far end of a line (rarely hit); in RTL the text START lands
-   there and the first words tuck under the icons and look clipped. When the
-   composer holds RTL text, give it enough right padding to clear the whole row. */
-.chat__footer .lexxy-editor__content:has(p:dir(rtl)) {
+/* Chat composer RTL clearance — ONLY in the main view, where the tool row
+   (emoji/attach/mic/format + our added CC button) floats over the input's right
+   edge. Basecamp reserves ~140px there, but our button widens the row to ~165px,
+   so in RTL the text START tucks under the icons and looks clipped. Give RTL
+   content enough right padding to clear the whole row. Scoped to `.main-content`
+   on purpose: the sidebar ping composer (`.sidebar__frame`) puts its tools in a
+   row BELOW the input (native padding-right:10px, no overlap), so padding there
+   would just shove the text off the right edge into the middle. */
+.main-content .chat__footer .lexxy-editor__content:has(p:dir(rtl)) {
   padding-right: 172px !important;
 }
 

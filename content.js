@@ -554,6 +554,13 @@
   // worker actually came up (and to show live status in the tray).
 
   const CC_WORKDIR = "~/Projects/thmanyah.d/career-coach";
+  // Sent when the user launches without typing anything (the textarea shows the
+  // friendly "decide and respond automatically" placeholder — the user never
+  // sees this full instruction, it's only what the worker receives).
+  const CC_AUTO_PROMPT =
+    "read and analyze the chat and if there's something to respond with, do " +
+    "respond and do whatever action is needed such as queries or exploring a " +
+    "database then feel free to do that, never do anything destructive";
   const CC_LOOPS = [
     { key: "oneshot", label: "One-shot" },
     { key: "15min", label: "15 min" },
@@ -701,7 +708,7 @@
     pop.appendChild(head);
 
     const ta = ccEl("textarea", "bce-ccpop__prompt");
-    ta.placeholder = "What should Claude do here?  (Enter to launch · Shift+Enter = new line)";
+    ta.placeholder = "decide and respond automatically  (Enter to launch · Shift+Enter = new line)";
     ta.rows = 3;
     pop.appendChild(ta);
 
@@ -761,12 +768,13 @@
 
     launch.addEventListener("click", async () => {
       const typed = ta.value.trim();
-      if (!typed) { setStatus("err", "Write a prompt first."); ta.focus(); return; }
+      // Empty = "decide and respond automatically": send the default instruction.
+      const prompt = typed || CC_AUTO_PROMPT;
       const loop = seg.querySelector("[data-on]").dataset.loop;
       launch.disabled = true;
       setStatus("busy", "Spawning worker…");
-      const title = "bc " + typed.slice(0, 40);
-      const r = await hqSend({ type: "hqSpawn", title, prompt: ccPrompt(typed, loop, url, replyCb.checked), workdir: CC_WORKDIR });
+      const title = "bc " + (typed ? typed.slice(0, 40) : "auto-respond");
+      const r = await hqSend({ type: "hqSpawn", title, prompt: ccPrompt(prompt, loop, url, replyCb.checked), workdir: CC_WORKDIR });
       if (!r.ok) { setStatus("err", "Launch failed: " + r.error); launch.disabled = false; return; }
       const sessions = await loadCcSessions();
       sessions.unshift({ session: r.session, title, url, ts: Date.now() });
