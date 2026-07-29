@@ -17,6 +17,14 @@
   // pages fail quietly instead of spamming the console until the tab reloads.
   const ctxAlive = () => { try { return !!(chrome.runtime && chrome.runtime.id); } catch { return false; } };
 
+  // ---- Feature gate: Claude Code launcher ----------------------------------
+  // The CC launcher is a PERSONAL, unpublished feature — it needs the local HQ
+  // server, so it's meaningless for public users. Ship it OFF: with CC_ENABLED
+  // false there's no button and the popup hides its toggle, so the published
+  // build is plain Basecamp Enhancer. Flip to true to use it personally (the
+  // `cc-launcher` branch does exactly that). Keep in sync with popup.js's copy.
+  const CC_ENABLED = false;
+
   const DEFAULT_EMOJIS = ["👍", "👏", "🙌", "❤️", "😂", "😊", "🎉", "🚀"];
   // Inline-menu items in display order. `key` is matched (prefix, lowercase)
   // against the lifted item's text, so "notified" catches "Notified 3 people".
@@ -996,7 +1004,7 @@
     if (settings.inlineReactions) applyInlineReactions(root); // standalone boost bars
     if (settings.inlineReactions || settings.inlineMenus) applyHoverBars(root); // records
     // a newly opened ping window is a new pane — give it its button right away
-    if (settings.ccLaunch) applyCcLaunchers();
+    if (CC_ENABLED && settings.ccLaunch) applyCcLaunchers();
   }
 
   // Theme: our overlays can't use Canvas/CanvasText (Dark Reader can't rewrite
@@ -1033,7 +1041,7 @@
     if (!settings.inlineMenus) removeHoverMenus();
     // Launcher buttons are per-pane; Turbo body swaps drop them, and the
     // turbo:* → reconcile listeners bring them right back.
-    if (settings.ccLaunch) applyCcLaunchers(); else removeCcLaunchers();
+    if (CC_ENABLED && settings.ccLaunch) applyCcLaunchers(); else removeCcLaunchers();
   }
 
   // Run as early as possible (document_start): the observer below catches most

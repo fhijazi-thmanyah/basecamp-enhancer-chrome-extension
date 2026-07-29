@@ -1,6 +1,11 @@
 // Popup: reflect stored settings and write changes back. The content script
 // listens on chrome.storage.onChanged and applies/reverts each feature live.
 
+// Feature gate — keep in sync with content.js. The Claude Code launcher is a
+// personal, unpublished feature; false hides its toggle row so the published
+// build never surfaces it. The `cc-launcher` branch flips this to true.
+const CC_ENABLED = false;
+
 const DEFAULT_EMOJIS = ["👍", "👏", "🙌", "❤️", "😂", "😊", "🎉", "🚀"];
 // keep in sync with content.js DEFAULT_MENU_ITEMS
 const DEFAULT_MENU_ITEMS = [
@@ -104,6 +109,7 @@ document.getElementById("resetMenu").addEventListener("click", () => {
 });
 
 chrome.storage.sync.get(DEFAULTS, (settings) => {
+  document.getElementById("ccRow").hidden = !CC_ENABLED; // personal feature; hidden in the published build
   for (const key of TOGGLES) document.getElementById(key).checked = settings[key];
   const emojis = settings.reactionEmojis || DEFAULT_EMOJIS;
   emojiInput.value = emojis.join(" ");

@@ -2,6 +2,8 @@
 
 MV3 Chrome extension scoped to Basecamp. Five features, all idempotent, continuous, and individually toggleable. See @README.md for install/usage.
 
+**Publish gate — the Claude Code launcher is OFF in the shipped build.** It's a personal feature (needs the local HQ server), so it's gated behind a global `const CC_ENABLED = false;` (top of `content.js`, mirrored in `popup.js`). False = no button on the page **and** the popup hides its toggle row (`#ccRow`), so the published/announced build is a clean four-feature extension. All the CC code stays committed on `master`; the **`cc-launcher` branch** just flips both flags to `true` (a trivial 2-line diff) — that's the branch to load unpacked for personal use. The manifest's `127.0.0.1:8377` host-permission, `web_accessible_resources`, and `background.js` stay in the published build (a runtime flag can't strip manifest keys); they're inert with CC off (distribution is Unlisted, so the localhost permission is harmless). Replace with real feature-gating (PostHog etc.) later.
+
 ## Architecture
 
 Content script (`content.js`, one IIFE) + background service worker (`background.js`, HQ calls only) + toolbar popup (`popup.html`/`popup.js`). No build step, no dependencies.
