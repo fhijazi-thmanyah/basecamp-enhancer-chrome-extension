@@ -261,17 +261,48 @@
     document.querySelectorAll(".bce-reactions").forEach((b) => b.remove());
   }
 
-  // Apply the boost-create response. Basecamp returns the refreshed
-  // <turbo-frame id="boosts_recording_…"> (or turbo-stream(s)); swap it in so
-  // the new reaction shows without a page reload. Our sibling .bce-reactions bar
-  // is untouched.
+  // Apply the boost-create/-delete response. Basecamp replies with the refreshed
+  // `<turbo-frame id="boosts_recording_…">` (the reaction row) PLUS a
+  // `<turbo-stream>` (the "+ new boost" button). We can't hand it to the page's
+  // Turbo: `window.Turbo` lives in the page's main world, not our content-script
+  // isolated world, so it's `undefined` here — the old `renderStreamMessage`
+  // call silently no-op'd and the reaction only appeared after a reload. So we
+  // apply both ourselves with plain DOM (works across the isolation boundary; a
+  // turbo-frame's light-DOM children render whether or not it's upgraded). Our
+  // sibling `.bce-reactions` bar is a child of `.boosts`, not of the frame, so
+  // it's left untouched.
   function applyBoostResponse(html) {
-    if (/<turbo-stream[\s>]/i.test(html)) return window.Turbo && window.Turbo.renderStreamMessage(html);
-    const tpl = document.createElement("template");
-    tpl.innerHTML = html.trim();
-    const incoming = tpl.content.querySelector("turbo-frame");
-    const existing = incoming && document.getElementById(incoming.id);
-    if (existing) existing.replaceWith(incoming);
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    // Refreshed frame(s) first — replace the matching element in place.
+    doc.querySelectorAll("turbo-frame[id]").forEach((frame) => {
+      const existing = document.getElementById(frame.id);
+      if (existing) existing.replaceWith(frame);
+    });
+    // Then any turbo-stream(s) (the new-boost button, etc.).
+    doc.querySelectorAll("turbo-stream[action]").forEach(applyTurboStream);
+  }
+
+  // Minimal Turbo Streams executor — mirrors Turbo's own actions against
+  // `target=<id>` or `targets=<css>`, so we don't depend on the page's Turbo.
+  function applyTurboStream(stream) {
+    const action = stream.getAttribute("action");
+    const tmpl = stream.querySelector(":scope > template");
+    const content = () => (tmpl ? tmpl.content.cloneNode(true) : document.createDocumentFragment());
+    const sel = stream.getAttribute("targets");
+    const targets = sel
+      ? [...document.querySelectorAll(sel)]
+      : [document.getElementById(stream.getAttribute("target"))].filter(Boolean);
+    for (const el of targets) {
+      switch (action) {
+        case "append": el.append(content()); break;
+        case "prepend": el.prepend(content()); break;
+        case "before": el.before(content()); break;
+        case "after": el.after(content()); break;
+        case "update": el.replaceChildren(content()); break;
+        case "replace": el.replaceWith(content()); break;
+        case "remove": el.remove(); break;
+      }
+    }
   }
 
   async function sendBoost(container, emoji, btn) {
