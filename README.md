@@ -40,3 +40,22 @@ Click the toolbar icon for a popup that enables/disables each feature independen
 
 - Scoped via `content_scripts.matches`; it injects on no other site.
 - The RTL selector list (`content.js` → `RTL_SELECTORS`) targets Basecamp content classes — chiefly `.formatted_content` (rendered messages/comments/descriptions), plus `.trix-content`, `.message__content`, `.todo__content`, etc. Add selectors there if a specific view isn't picking up direction.
+
+## Backend setup (Claude Code launcher only)
+
+Only needed if you run a build with `CC_ENABLED = true` (the launcher is off and hidden in the published build — see the note above). The launcher spawns unattended [Claude Code](https://code.claude.com) workers through a small **local** backend on `127.0.0.1:8377`; the extension never talks to anything else.
+
+1. **Claude Code** — installed and signed in.
+2. **Remote control on by default** — inside any Claude Code session run `/config` and set **"Enable Remote Control for all sessions"** to `true`. This is what gives every spawned worker its shareable `claude.ai/code/session_…` link.
+3. **`uv` and `tmux`** — e.g. `brew install uv tmux` (workers run inside tmux sessions; the backend runs via [`uvx`](https://docs.astral.sh/uv/guides/tools/)).
+4. **Create the workspace dir and start the backend.** Each session gets its own folder under a workspace directory, configurable via the `BCE_WORKSPACE_DIR` env var (default `~/.basecamp-enhancer/workspace/`):
+
+   ```bash
+   export BCE_WORKSPACE_DIR="${BCE_WORKSPACE_DIR:-$HOME/.basecamp-enhancer/workspace}"
+   mkdir -p "$BCE_WORKSPACE_DIR"
+   uvx git+https://github.com/<owner>/<backend-repo>
+   ```
+
+   <!-- TODO: replace <owner>/<backend-repo> with the real URL once the backend is published as a standalone package -->
+
+If the extension can't reach the backend when you hit **Launch**, the popover shows this same command inline.

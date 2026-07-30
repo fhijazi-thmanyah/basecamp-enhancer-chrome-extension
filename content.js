@@ -593,6 +593,11 @@
   // worker actually came up (and to show live status in the tray).
 
   const CC_WORKDIR = "~/Projects/thmanyah.d/career-coach";
+  // Shown in the launch popover when the backend at 127.0.0.1:8377 is
+  // unreachable — keep in sync with README.md → "Backend setup".
+  const CC_SETUP_HINT =
+    'mkdir -p "${BCE_WORKSPACE_DIR:-$HOME/.basecamp-enhancer/workspace}"\n' +
+    "uvx git+https://github.com/<owner>/<backend-repo>";
   // Sent when the user launches without typing anything (the textarea shows the
   // friendly "decide and respond automatically" placeholder — the user never
   // sees this full instruction, it's only what the worker receives).
@@ -814,7 +819,13 @@
       setStatus("busy", "Spawning worker…");
       const title = "bc " + (typed ? typed.slice(0, 40) : "auto-respond");
       const r = await hqSend({ type: "hqSpawn", title, prompt: ccPrompt(prompt, loop, url, replyCb.checked), workdir: CC_WORKDIR });
-      if (!r.ok) { setStatus("err", "Launch failed: " + r.error); launch.disabled = false; return; }
+      if (!r.ok) {
+        // Backend down is the common first-run failure — show how to start it.
+        const hint = /unreachable/i.test(r.error || "") ? "Start the backend:\n" + CC_SETUP_HINT : null;
+        setStatus("err", "Launch failed: " + r.error, hint);
+        launch.disabled = false;
+        return;
+      }
       const sessions = await loadCcSessions();
       sessions.unshift({ session: r.session, title, url, ts: Date.now() });
       saveCcSessions(sessions);
