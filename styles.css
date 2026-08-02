@@ -13,6 +13,14 @@
   unicode-bidi: plaintext;
 }
 
+/* Basecamp draws the markdown-quote bar with physical border-left, and its
+   RTL rule ADDS border-right without clearing the left one — so any
+   blockquote inside an RTL container shows TWO bars. Inside content we
+   forced RTL, keep only the (correct) right-side bar. */
+[data-bce-dir][dir="rtl"] blockquote {
+  border-left: 0 !important;
+}
+
 /* Chat composer RTL clearance — ONLY in the main view, where the tool row
    (emoji/attach/mic/format + our added CC button) floats over the input's right
    edge. Basecamp reserves ~140px there, but our button widens the row to ~165px,
