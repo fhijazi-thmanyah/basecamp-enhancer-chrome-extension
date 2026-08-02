@@ -66,6 +66,15 @@
       #resetEmojis:hover, #resetMenu:hover { text-decoration: underline; }
       .disabled { opacity: 0.4; pointer-events: none; }
 
+      #bcFont {
+        max-width: 132px; font: inherit; font-size: 12px;
+        border: 1px solid #ddd; border-radius: 6px; padding: 3px 4px;
+        background: #fafafa; color: inherit;
+      }
+      @media (prefers-color-scheme: dark) {
+        #bcFont { background: #1c1c1c; border-color: #3a3a3a; }
+      }
+
       /* menu-item editor: draggable rows */
       #menuList { list-style: none; margin: 0; padding: 0; }
       #menuList li {
@@ -98,12 +107,15 @@
       </span>
     </label>
 
-    <label class="row" for="thmanyahFont">
-      <span class="label">Thmanyah font<small>IBM Plex Sans Arabic — thmanyah.com's typeface</small></span>
-      <span class="switch">
-        <input type="checkbox" id="thmanyahFont" />
-        <span class="slider"></span>
-      </span>
+    <label class="row" for="bcFont">
+      <span class="label">Font<small>swap Basecamp's font for a Thmanyah one</small></span>
+      <select id="bcFont">
+        <option value="">Basecamp original</option>
+        <option value="plex">Thmanyah web (IBM Plex Arabic)</option>
+        <option value="sans">Thmanyah Sans</option>
+        <option value="seriftext">Thmanyah Serif Text</option>
+        <option value="serifdisplay">Thmanyah Serif Display</option>
+      </select>
     </label>
 
     <label class="row" for="inlineReactions">

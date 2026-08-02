@@ -5,7 +5,8 @@
 // 4. Hover bar: a Google-Chat–style pill floated at each message's top-right on
 //    hover, holding the quick-react emoji plus the record's full "…" action menu
 //    (Edit / Reply / Bookmark / Bubble up / Copy link / Delete / …).
-// 5. Thmanyah font: IBM Plex Sans Arabic (thmanyah.com's typeface) everywhere.
+// 5. Thmanyah font: a picker — IBM Plex Sans Arabic (thmanyah.com's typeface)
+//    or one of the Thmanyah brand families — applied across the whole UI.
 // All features are individually toggleable from the toolbar popup and are
 // applied/reverted live via chrome.storage; with all off it's normal Basecamp.
 
@@ -46,7 +47,10 @@
     rtl: true,
     inlineReactions: true,
     inlineMenus: true,
-    thmanyahFont: true,
+    // font picker: "" = original Basecamp, "plex" = IBM Plex Sans Arabic
+    // (thmanyah.com's typeface), "sans"/"seriftext"/"serifdisplay" = the
+    // Thmanyah brand families. Values match styles.css [data-bce-font=…].
+    bcFont: "plex",
     ccLaunch: true,
     reactionEmojis: DEFAULT_EMOJIS,
     menuItems: DEFAULT_MENU_ITEMS,
@@ -598,7 +602,7 @@
   // Shown in the launch popover when the backend at 127.0.0.1:8377 is
   // unreachable — keep in sync with README.md → "Backend setup".
   const CC_SETUP_HINT =
-    'mkdir -p "${BCE_WORKSPACE_DIR:-$HOME/.basecamp-enhancer/workspace}"\n' +
+    'mkdir -p "${BCE_WORKSPACE_DIR:-$HOME/.basecamp-enhancer}/workspace"\n' +
     "uvx git+https://github.com/<owner>/<backend-repo>";
   // Sent when the user launches without typing anything (the textarea shows the
   // friendly "decide and respond automatically" placeholder — the user never
@@ -766,7 +770,7 @@
       const b = ccEl("button", "bce-ccpop__segbtn", label);
       b.type = "button";
       b.dataset.loop = key;
-      if (key === "15min") b.dataset.on = "1"; // default
+      if (key === "oneshot") b.dataset.on = "1"; // default: one-off, no watch loop
       b.addEventListener("click", () => {
         seg.querySelectorAll("[data-on]").forEach((x) => delete x.dataset.on);
         b.dataset.on = "1";
@@ -780,6 +784,7 @@
     const replyRow = ccEl("label", "bce-ccpop__reply");
     const replyCb = ccEl("input");
     replyCb.type = "checkbox";
+    replyCb.checked = true; // default on: the whole point is usually a reply
     replyRow.appendChild(replyCb);
     replyRow.appendChild(ccEl("span", null, "Reply when done (@-mention relevant people)"));
     pop.appendChild(replyRow);
@@ -849,12 +854,10 @@
       const sessions = (await loadCcSessions()).filter((s) => sameConvo(s.url, url));
       tray.textContent = "";
       if (!sessions.length) return;
+      // no general "Open HQ" link here (explicitly unwanted) — each row
+      // carries its own per-session HQ deep link instead
       const head2 = ccEl("div", "bce-ccpop__trayhead");
       head2.appendChild(ccEl("span", null, "Sessions on this conversation"));
-      const hqLink = ccEl("a", "bce-ccpop__hqlink", "Open HQ ↗");
-      hqLink.href = "http://127.0.0.1:8377";
-      hqLink.target = "_blank";
-      head2.appendChild(hqLink);
       tray.appendChild(head2);
       for (const s of sessions) {
         const row = ccEl("div", "bce-cc-sess");
@@ -1038,13 +1041,12 @@
   }
 
   // ---- Feature: Thmanyah font -------------------------------------------
-  // "Thmanyah font" = IBM Plex Sans Arabic, the typeface thmanyah.com renders
-  // its articles in (the calligraphic ثمانية wordmark is logo lettering, not a
-  // text face). styles.css holds the @font-face declarations (bundled woff2)
-  // and the override rule, both scoped under html[data-bce-font] — so toggling
-  // that attribute IS the whole apply/revert. Trivially idempotent.
+  // A font picker (see DEFAULTS.bcFont): styles.css holds the @font-faces
+  // (bundled woff2) and maps data-bce-font="<choice>" on <html> to a family
+  // via a CSS variable — so setting/removing that attribute IS the whole
+  // apply/revert. Trivially idempotent.
 
-  function applyFont() { document.documentElement.setAttribute("data-bce-font", "1"); }
+  function applyFont() { document.documentElement.setAttribute("data-bce-font", settings.bcFont); }
   function removeFont() { document.documentElement.removeAttribute("data-bce-font"); }
 
   // ---- Wiring -----------------------------------------------------------
@@ -1055,7 +1057,7 @@
     if (root.nodeType === 1 && root.classList && root.classList.contains("bce-ago")) return;
     if (settings.timeLabels) decorateAllTimes(root);
     if (settings.rtl) applyAutoDir(root);
-    if (settings.thmanyahFont) applyFont(); // global attribute — cheap no-op when set
+    if (settings.bcFont) applyFont(); // global attribute — cheap no-op when set
     if (settings.inlineReactions) applyInlineReactions(root); // standalone boost bars
     if (settings.inlineReactions || settings.inlineMenus) applyHoverBars(root); // records
     // a newly opened ping window is a new pane — give it its button right away
@@ -1091,7 +1093,7 @@
     syncTheme();
     if (settings.timeLabels) decorateAllTimes(); else removeTimeLabels();
     if (settings.rtl) applyAutoDir(); else removeAutoDir();
-    if (settings.thmanyahFont) applyFont(); else removeFont();
+    if (settings.bcFont) applyFont(); else removeFont();
     if (settings.inlineReactions) applyInlineReactions(); else removeReactionBars();
     if (settings.inlineReactions || settings.inlineMenus) applyHoverBars(); else removeHoverBars();
     if (!settings.inlineMenus) removeHoverMenus();

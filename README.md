@@ -10,7 +10,7 @@ A tiny Chrome extension (Manifest V3) that runs **only on Basecamp** and adds fi
 4. **Hover action bar** — a **Google-Chat–style toolbar** revealed on hover, holding the quick-react emoji **plus the record's whole "…" menu** (**Edit, Reply, Bookmark, Bubble up, Copy link, Delete / Put in the trash, …**) — so you never open the kebab. On **chat/pings** it sits just above each bubble, **matching the bubble's width** (wrapping onto extra rows) so sent/received messages each get a toolbar aligned to their own bubble; on **comments** (cards, todos, messages) it's a compact pill at the top-right. It's Basecamp's own menu (its controllers reconnect, so every action works natively), loads lazily as records scroll into view, and — because it floats — never disturbs Basecamp's layout. Menu items show as **icons only** (labels appear as tooltips) to stay compact. **Configure it from the popup**: choose which menu items appear and drag to reorder them. Exactly one bar shows at a time, and it never appears on the comment box you're still writing in.
 
    ![Hover action bar: hovering a message reveals a Google-Chat–style toolbar with one-click reaction emoji plus the full action menu (Edit, Reply, Bookmark, Bubble up, Copy link, Delete); it follows the pointer from message to message](docs/media/bce-hoverbar.gif)
-5. **Thmanyah font** — applies **IBM Plex Sans Arabic** (the typeface [thmanyah.com](https://thmanyah.com) renders its articles in; bundled as woff2, SIL OFL licensed) across the whole Basecamp UI, replacing the default font. Code blocks keep their monospace font, and anything the typeface doesn't cover (emoji etc.) falls back to the system stack.
+5. **Thmanyah font** — a font picker for the whole Basecamp UI. Default is **IBM Plex Sans Arabic** (the typeface [thmanyah.com](https://thmanyah.com) renders its articles in; bundled as woff2, SIL OFL licensed); the dropdown also offers the **Thmanyah Sans / Serif Text / Serif Display** brand families, or "Basecamp original" to turn the swap off. Code blocks keep their monospace font, and anything the chosen typeface doesn't cover (emoji etc.) falls back to the system stack.
 
 > **Note:** the extension also contains an experimental **Claude Code launcher** (spawns a local Claude Code worker to handle/watch a conversation), but it's a personal feature that needs a local HQ server, so it's **disabled by default and hidden** in the published build (gated behind a `CC_ENABLED` flag). It isn't part of the five features above.
 
@@ -50,11 +50,11 @@ Only needed if you run a build with `CC_ENABLED = true` (the launcher is off and
 1. **Claude Code** — installed and signed in.
 2. **Remote control on by default** — inside any Claude Code session run `/config` and set **"Enable Remote Control for all sessions"** to `true`. This is what gives every spawned worker its shareable `claude.ai/code/session_…` link.
 3. **`uv` and `tmux`** — e.g. `brew install uv tmux` (workers run inside tmux sessions; the backend runs via [`uvx`](https://docs.astral.sh/uv/guides/tools/)).
-4. **Create the workspace dir and start the backend.** Each session gets its own folder under a workspace directory, configurable via the `BCE_WORKSPACE_DIR` env var (default `~/.basecamp-enhancer/workspace/`):
+4. **Create the workspace dir and start the backend.** `BCE_WORKSPACE_DIR` is the backend's base directory (default `~/.basecamp-enhancer/`); each session gets its own folder under `$BCE_WORKSPACE_DIR/workspace/<session-id>/` (working files, `meta.json`, and the `.done` marker that ends its revive-after-reboot lifecycle):
 
    ```bash
-   export BCE_WORKSPACE_DIR="${BCE_WORKSPACE_DIR:-$HOME/.basecamp-enhancer/workspace}"
-   mkdir -p "$BCE_WORKSPACE_DIR"
+   export BCE_WORKSPACE_DIR="${BCE_WORKSPACE_DIR:-$HOME/.basecamp-enhancer}"
+   mkdir -p "$BCE_WORKSPACE_DIR/workspace"
    uvx git+https://github.com/<owner>/<backend-repo>
    ```
 

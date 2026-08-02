@@ -24,12 +24,12 @@ const DEFAULTS = {
   rtl: true,
   inlineReactions: true,
   inlineMenus: true,
-  thmanyahFont: true,
+  bcFont: "plex", // "" = original | plex | sans | seriftext | serifdisplay (keep in sync with content.js)
   ccLaunch: true,
   reactionEmojis: DEFAULT_EMOJIS,
   menuItems: DEFAULT_MENU_ITEMS,
 };
-const TOGGLES = ["timeLabels", "rtl", "inlineReactions", "inlineMenus", "thmanyahFont", "ccLaunch"];
+const TOGGLES = ["timeLabels", "rtl", "inlineReactions", "inlineMenus", "ccLaunch"];
 
 // Split a string into emoji, honoring multi-codepoint graphemes (ZWJ, flags,
 // skin tones) and ignoring whitespace/commas — so "👍👏 🙌, 🎉" all work.
@@ -112,6 +112,7 @@ document.getElementById("resetMenu").addEventListener("click", () => {
 chrome.storage.sync.get(DEFAULTS, (settings) => {
   document.getElementById("ccRow").hidden = !CC_ENABLED; // personal feature; hidden in the published build
   for (const key of TOGGLES) document.getElementById(key).checked = settings[key];
+  document.getElementById("bcFont").value = settings.bcFont ?? "plex";
   const emojis = settings.reactionEmojis || DEFAULT_EMOJIS;
   emojiInput.value = emojis.join(" ");
   showCount(emojis.length);
@@ -127,6 +128,10 @@ for (const key of TOGGLES) {
     if (key === "inlineMenus") menuEditor.classList.toggle("disabled", !e.target.checked);
   });
 }
+
+document.getElementById("bcFont").addEventListener("change", (e) => {
+  chrome.storage.sync.set({ bcFont: e.target.value });
+});
 
 // Save emoji as the user edits (debounced so we don't thrash storage.sync).
 let saveTimer;
