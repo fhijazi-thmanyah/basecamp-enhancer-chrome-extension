@@ -24,11 +24,12 @@ const DEFAULTS = {
   rtl: true,
   inlineReactions: true,
   inlineMenus: true,
+  thmanyahFont: true,
   ccLaunch: true,
   reactionEmojis: DEFAULT_EMOJIS,
   menuItems: DEFAULT_MENU_ITEMS,
 };
-const TOGGLES = ["timeLabels", "rtl", "inlineReactions", "inlineMenus", "ccLaunch"];
+const TOGGLES = ["timeLabels", "rtl", "inlineReactions", "inlineMenus", "thmanyahFont", "ccLaunch"];
 
 // Split a string into emoji, honoring multi-codepoint graphemes (ZWJ, flags,
 // skin tones) and ignoring whitespace/commas — so "👍👏 🙌, 🎉" all work.

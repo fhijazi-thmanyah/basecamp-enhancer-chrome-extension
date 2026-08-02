@@ -5,6 +5,7 @@
 // 4. Hover bar: a Google-Chat–style pill floated at each message's top-right on
 //    hover, holding the quick-react emoji plus the record's full "…" action menu
 //    (Edit / Reply / Bookmark / Bubble up / Copy link / Delete / …).
+// 5. Thmanyah font: IBM Plex Sans Arabic (thmanyah.com's typeface) everywhere.
 // All features are individually toggleable from the toolbar popup and are
 // applied/reverted live via chrome.storage; with all off it's normal Basecamp.
 
@@ -45,6 +46,7 @@
     rtl: true,
     inlineReactions: true,
     inlineMenus: true,
+    thmanyahFont: true,
     ccLaunch: true,
     reactionEmojis: DEFAULT_EMOJIS,
     menuItems: DEFAULT_MENU_ITEMS,
@@ -1035,6 +1037,16 @@
     ccClosePopover();
   }
 
+  // ---- Feature: Thmanyah font -------------------------------------------
+  // "Thmanyah font" = IBM Plex Sans Arabic, the typeface thmanyah.com renders
+  // its articles in (the calligraphic ثمانية wordmark is logo lettering, not a
+  // text face). styles.css holds the @font-face declarations (bundled woff2)
+  // and the override rule, both scoped under html[data-bce-font] — so toggling
+  // that attribute IS the whole apply/revert. Trivially idempotent.
+
+  function applyFont() { document.documentElement.setAttribute("data-bce-font", "1"); }
+  function removeFont() { document.documentElement.removeAttribute("data-bce-font"); }
+
   // ---- Wiring -----------------------------------------------------------
 
   // Enhance a freshly added subtree, honoring current settings.
@@ -1043,6 +1055,7 @@
     if (root.nodeType === 1 && root.classList && root.classList.contains("bce-ago")) return;
     if (settings.timeLabels) decorateAllTimes(root);
     if (settings.rtl) applyAutoDir(root);
+    if (settings.thmanyahFont) applyFont(); // global attribute — cheap no-op when set
     if (settings.inlineReactions) applyInlineReactions(root); // standalone boost bars
     if (settings.inlineReactions || settings.inlineMenus) applyHoverBars(root); // records
     // a newly opened ping window is a new pane — give it its button right away
@@ -1078,6 +1091,7 @@
     syncTheme();
     if (settings.timeLabels) decorateAllTimes(); else removeTimeLabels();
     if (settings.rtl) applyAutoDir(); else removeAutoDir();
+    if (settings.thmanyahFont) applyFont(); else removeFont();
     if (settings.inlineReactions) applyInlineReactions(); else removeReactionBars();
     if (settings.inlineReactions || settings.inlineMenus) applyHoverBars(); else removeHoverBars();
     if (!settings.inlineMenus) removeHoverMenus();

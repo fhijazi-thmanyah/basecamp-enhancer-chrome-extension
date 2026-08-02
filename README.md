@@ -1,6 +1,6 @@
 # <img src="icons/icon128.png" width="48" align="center" alt="Basecamp Enhancer icon" /> Basecamp Enhancer
 
-A tiny Chrome extension (Manifest V3) that runs **only on Basecamp** and adds four quality-of-life fixes:
+A tiny Chrome extension (Manifest V3) that runs **only on Basecamp** and adds five quality-of-life fixes:
 
 1. **Relative timestamps** — appends ` (X ago)` to `<time>` elements (e.g. `Jun 2 (6 days ago)`), computed from the `datetime` attribute via `Intl.RelativeTimeFormat`. Refreshed every 60 s. Timestamps within ±1 day are skipped, since Basecamp already shows those as the word "yesterday"/"today"/"tomorrow".
 2. **RTL fix** — sets `dir="auto"` on content containers **and editable fields** (textareas, text inputs, the rich-text editor) so Arabic (and other RTL) text renders right-to-left — live as you type — while mixed Latin words/numbers stay correctly ordered, and English content stays LTR.
@@ -10,8 +10,9 @@ A tiny Chrome extension (Manifest V3) that runs **only on Basecamp** and adds fo
 4. **Hover action bar** — a **Google-Chat–style toolbar** revealed on hover, holding the quick-react emoji **plus the record's whole "…" menu** (**Edit, Reply, Bookmark, Bubble up, Copy link, Delete / Put in the trash, …**) — so you never open the kebab. On **chat/pings** it sits just above each bubble, **matching the bubble's width** (wrapping onto extra rows) so sent/received messages each get a toolbar aligned to their own bubble; on **comments** (cards, todos, messages) it's a compact pill at the top-right. It's Basecamp's own menu (its controllers reconnect, so every action works natively), loads lazily as records scroll into view, and — because it floats — never disturbs Basecamp's layout. Menu items show as **icons only** (labels appear as tooltips) to stay compact. **Configure it from the popup**: choose which menu items appear and drag to reorder them. Exactly one bar shows at a time, and it never appears on the comment box you're still writing in.
 
    ![Hover action bar: hovering a message reveals a Google-Chat–style toolbar with one-click reaction emoji plus the full action menu (Edit, Reply, Bookmark, Bubble up, Copy link, Delete); it follows the pointer from message to message](docs/media/bce-hoverbar.gif)
+5. **Thmanyah font** — applies **IBM Plex Sans Arabic** (the typeface [thmanyah.com](https://thmanyah.com) renders its articles in; bundled as woff2, SIL OFL licensed) across the whole Basecamp UI, replacing the default font. Code blocks keep their monospace font, and anything the typeface doesn't cover (emoji etc.) falls back to the system stack.
 
-> **Note:** the extension also contains an experimental **Claude Code launcher** (spawns a local Claude Code worker to handle/watch a conversation), but it's a personal feature that needs a local HQ server, so it's **disabled by default and hidden** in the published build (gated behind a `CC_ENABLED` flag). It isn't part of the four features above.
+> **Note:** the extension also contains an experimental **Claude Code launcher** (spawns a local Claude Code worker to handle/watch a conversation), but it's a personal feature that needs a local HQ server, so it's **disabled by default and hidden** in the published build (gated behind a `CC_ENABLED` flag). It isn't part of the five features above.
 
 All run continuously: a `MutationObserver` enhances new content as Basecamp streams it in, and every operation is **idempotent** — re-running never produces duplicate badges, bars, or re-set attributes. Turbo re-renders (cable-stream updates, morph refreshes) are caught via `turbo:*` events so decorations restore instantly instead of flickering.
 
@@ -34,7 +35,8 @@ Click the toolbar icon for a popup that enables/disables each feature independen
 | `content.js` | All page logic — time badges, RTL auto-dir, hover bars, CC launcher UI, settings/apply-revert, observer wiring |
 | `background.js` | Service worker for the (gated) Claude Code launcher — the only code that talks to the local HQ server (content scripts are CORS-bound); inert when `CC_ENABLED` is off |
 | `popup.html` / `popup.js` | Toolbar popup with the feature toggles |
-| `styles.css` | Badge styling + `unicode-bidi: plaintext` bidi safety net |
+| `styles.css` | Badge styling, `unicode-bidi: plaintext` bidi safety net, IBM Plex Sans Arabic `@font-face`s + override rule |
+| `fonts/` | Bundled IBM Plex Sans Arabic weights (300–700, woff2) + its OFL license |
 
 ## Notes
 
