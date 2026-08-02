@@ -3,7 +3,7 @@
 A tiny Chrome extension (Manifest V3) that runs **only on Basecamp** and adds five quality-of-life fixes:
 
 1. **Relative timestamps** — appends ` (X ago)` to `<time>` elements (e.g. `Jun 2 (6 days ago)`), computed from the `datetime` attribute via `Intl.RelativeTimeFormat`. Refreshed every 60 s. Timestamps within ±1 day are skipped, since Basecamp already shows those as the word "yesterday"/"today"/"tomorrow".
-2. **RTL fix** — sets `dir="auto"` on content containers **and editable fields** (textareas, text inputs, the rich-text editor) so Arabic (and other RTL) text renders right-to-left — live as you type — while mixed Latin words/numbers stay correctly ordered, and English content stays LTR.
+2. **Force RTL** — Arabic-majority content renders right-to-left even when a paragraph *starts* with an English word or number (where the browser's own `dir="auto"` guesses LTR from the first character). Each paragraph/list/heading is judged by counting Arabic vs Latin letters, so mixed documents lay out per-block: Arabic-majority blocks go RTL, English blocks stay LTR. Editable fields (textareas, text inputs, the rich-text editor) auto-direct live as you type.
 
    ![RTL: Arabic auto-directs right-to-left live as you type, while embedded English words and numbers stay correctly ordered](docs/media/bce-rtl.gif)
 3. **Quick reactions** — one-click boost emoji so you react without opening the "…" picker. The set is **fixed and yours to arrange**: it shows exactly the emoji you configure in the popup, in the order you set them (no automatic recently-used reshuffling). On chat/pings and comments the emoji live in the hover bar (see the demo under **Hover action bar** below); on the main card/message/todo detail they sit inline next to Basecamp's "+".

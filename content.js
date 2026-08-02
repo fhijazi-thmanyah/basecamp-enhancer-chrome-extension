@@ -1,6 +1,7 @@
 // Basecamp Enhancer — content script
 // 1. Append a "(X ago)" relative-time label to <time> elements.
-// 2. Fix RTL: auto-detect text direction on content + input fields.
+// 2. Force RTL: majority-Arabic content renders right-to-left (even when it
+//    starts with English); inputs auto-direct as you type.
 // 3. Quick reactions: a row of one-click boost emoji (recently-used rotation).
 // 4. Hover bar: a Google-Chat–style pill floated at each message's top-right on
 //    hover, holding the quick-react emoji plus the record's full "…" action menu
@@ -148,11 +149,13 @@
     document.querySelectorAll(".bce-ago").forEach((b) => b.remove());
   }
 
-  // ---- Feature 2: RTL auto-direction ------------------------------------
+  // ---- Feature 2: Force RTL ---------------------------------------------
 
-  // dir="auto" makes the browser pick direction from the first strong
-  // character — the correct fix for mixed Arabic/English content, and it works
-  // live as the user types in textareas / inputs / rich-text editors.
+  // dir="auto" picks direction from the FIRST strong character, which lays a
+  // majority-Arabic paragraph out LTR whenever it happens to start with an
+  // English word or number. So rendered content is decided by MAJORITY count
+  // instead (Arabic > Latin letters ⇒ dir="rtl", else dir="auto"); editable
+  // fields always get dir="auto" so direction keeps following what you type.
   const RTL_SELECTORS = [
     // rendered content
     ".formatted_content", // messages, comments, card descriptions
@@ -172,13 +175,35 @@
     "[contenteditable='']",
   ].join(",");
 
-  // Only set dir when the element doesn't already declare one (Basecamp content
-  // ships without it), and tag what we touched so we can cleanly revert.
+  const RTL_EDITABLE_SEL = "trix-editor,textarea,input,[contenteditable]";
+  // Blocks inside rendered content that need their own per-paragraph decision
+  // (the composer writes <p dir="auto"> per paragraph — each resolves alone).
+  const RTL_BLOCK_SEL = "p,li,ul,ol,h1,h2,h3,h4,h5,h6,blockquote,[dir='auto']";
+  const RTL_CHARS = /[\u0591-\u07FF\u0860-\u08FF\uFB1D-\uFDFD\uFE70-\uFEFC]/g; // Hebrew + Arabic (incl. presentation forms)
+  const LTR_CHARS = /[A-Za-z\u00C0-\u024F]/g;
+
+  function majorityDir(el) {
+    const t = el.textContent || "";
+    return ((t.match(RTL_CHARS) || []).length > (t.match(LTR_CHARS) || []).length) ? "rtl" : "auto";
+  }
+
+  // Set dir, but only on elements with no dir, dir="auto", or ones we already
+  // tagged — never clobber an explicit ltr/rtl Basecamp set itself. The tag
+  // stores the ORIGINAL value ("none" = had no dir) so revert is exact.
+  function setDir(el, dir) {
+    const cur = el.getAttribute("dir");
+    if (cur === dir) return;
+    if (cur !== null && cur !== "auto" && !el.hasAttribute("data-bce-dir")) return;
+    if (!el.hasAttribute("data-bce-dir")) el.setAttribute("data-bce-dir", cur === null ? "none" : cur);
+    el.setAttribute("dir", dir);
+  }
+
   function setAutoDir(el) {
-    if (!el.hasAttribute("dir")) {
-      el.setAttribute("dir", "auto");
-      el.setAttribute("data-bce-dir", "1");
-    }
+    if (el.matches(RTL_EDITABLE_SEL)) { setDir(el, "auto"); return; }
+    setDir(el, majorityDir(el));
+    el.querySelectorAll(RTL_BLOCK_SEL).forEach((c) => {
+      if (!c.matches(RTL_EDITABLE_SEL)) setDir(c, majorityDir(c));
+    });
   }
 
   function applyAutoDir(root = document) {
@@ -188,7 +213,10 @@
 
   function removeAutoDir() {
     document.querySelectorAll("[data-bce-dir]").forEach((el) => {
-      el.removeAttribute("dir");
+      const orig = el.getAttribute("data-bce-dir");
+      // "1" = pre-v1.16 tag (only ever set on dir-less nodes) — treat as none
+      if (orig === "none" || orig === "1") el.removeAttribute("dir");
+      else el.setAttribute("dir", orig);
       el.removeAttribute("data-bce-dir");
     });
   }
