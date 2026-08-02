@@ -638,7 +638,7 @@
   // unreachable — keep in sync with README.md → "Backend setup".
   const CC_SETUP_HINT =
     'mkdir -p "${BCE_WORKSPACE_DIR:-$HOME/.basecamp-enhancer}/workspace"\n' +
-    "uvx git+https://github.com/<owner>/<backend-repo>";
+    "uvx git+https://github.com/FarisHijazi/cc-tmux-api";
   // Sent when the user launches without typing anything (the textarea shows the
   // friendly "decide and respond automatically" placeholder — the user never
   // sees this full instruction, it's only what the worker receives).

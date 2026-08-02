@@ -55,9 +55,9 @@ Only needed if you run a build with `CC_ENABLED = true` (the launcher is off and
    ```bash
    export BCE_WORKSPACE_DIR="${BCE_WORKSPACE_DIR:-$HOME/.basecamp-enhancer}"
    mkdir -p "$BCE_WORKSPACE_DIR/workspace"
-   uvx git+https://github.com/<owner>/<backend-repo>
+   uvx git+https://github.com/FarisHijazi/cc-tmux-api
    ```
 
-   <!-- TODO: replace <owner>/<backend-repo> with the real URL once the backend is published as a standalone package -->
+   The backend is [cc-tmux-api](https://github.com/FarisHijazi/cc-tmux-api) — a small standalone daemon (spawn/list/kill over HTTP on `127.0.0.1:8377`, tmux-backed, with status detection and revival after reboot). See its README for the API and configuration.
 
 If the extension can't reach the backend when you hit **Launch**, the popover shows this same command inline.
