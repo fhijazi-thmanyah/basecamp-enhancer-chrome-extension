@@ -364,6 +364,7 @@ form.bce-cc-beside > .relative { position: relative; }
 .bce-ccpop__status[data-kind="ok"] { color: #1f8f4e; }
 .bce-ccpop__status[data-kind="err"] { color: #d33; }
 .bce-ccpop__status[data-kind="busy"] { opacity: 0.75; }
+.bce-ccpop__status[data-kind="setup"] { color: #b26a00; }
 .bce-ccpop__tail {
   margin: 6px 0 0;
   max-height: 120px;

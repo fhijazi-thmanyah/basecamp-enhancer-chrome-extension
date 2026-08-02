@@ -958,9 +958,18 @@
     }
 
     async function pollTray() {
+      const r = await hqSend({ type: "hqWorkers" });
+      // Proactive setup notice: popover open + no backend ⇒ show how to start
+      // it right away (not only after a failed launch). Self-clears once the
+      // backend comes up; never clobbers an in-flight launch status.
+      if (!r.ok && /unreachable/i.test(r.error || "")) {
+        if (!status.dataset.kind || status.dataset.kind === "setup")
+          setStatus("setup", "Backend not running — start it with:", CC_SETUP_HINT);
+      } else if (status.dataset.kind === "setup") {
+        setStatus("", "");
+      }
       const rows = [...tray.querySelectorAll(".bce-cc-sess")];
       if (!rows.length) return;
-      const r = await hqSend({ type: "hqWorkers" });
       for (const row of rows) {
         const dot = row.querySelector(".bce-cc-dot");
         if (!r.ok) { dot.dataset.status = "unreachable"; dot.title = r.error; continue; }
