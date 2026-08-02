@@ -182,9 +182,15 @@
   const RTL_CHARS = /[\u0591-\u07FF\u0860-\u08FF\uFB1D-\uFDFD\uFE70-\uFEFC]/g; // Hebrew + Arabic (incl. presentation forms)
   const LTR_CHARS = /[A-Za-z\u00C0-\u024F]/g;
 
-  function majorityDir(el) {
+  // Majority-Arabic ⇒ rtl, majority-Latin ⇒ auto. Neutral-only or tied text
+  // ("…", numbers, bare checkboxes) falls back to the given direction — with
+  // no strong characters dir="auto" would default to LTR, which left-aligned
+  // "…" placeholder blocks inside otherwise-Arabic documents.
+  function majorityDir(el, fallback = "auto") {
     const t = el.textContent || "";
-    return ((t.match(RTL_CHARS) || []).length > (t.match(LTR_CHARS) || []).length) ? "rtl" : "auto";
+    const rtl = (t.match(RTL_CHARS) || []).length;
+    const ltr = (t.match(LTR_CHARS) || []).length;
+    return rtl > ltr ? "rtl" : rtl < ltr ? "auto" : fallback;
   }
 
   // Set dir, but only on elements with no dir, dir="auto", or ones we already
@@ -200,9 +206,10 @@
 
   function setAutoDir(el) {
     if (el.matches(RTL_EDITABLE_SEL)) { setDir(el, "auto"); return; }
-    setDir(el, majorityDir(el));
+    const containerDir = majorityDir(el);
+    setDir(el, containerDir);
     el.querySelectorAll(RTL_BLOCK_SEL).forEach((c) => {
-      if (!c.matches(RTL_EDITABLE_SEL)) setDir(c, majorityDir(c));
+      if (!c.matches(RTL_EDITABLE_SEL)) setDir(c, majorityDir(c, containerDir));
     });
   }
 
