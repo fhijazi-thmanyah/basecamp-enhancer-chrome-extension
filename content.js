@@ -611,6 +611,9 @@
     "read and analyze the chat and if there's something to respond with, do " +
     "respond and do whatever action is needed such as queries or exploring a " +
     "database then feel free to do that, never do anything destructive";
+  // Prepended (by the worker, per its prompt) to every message it posts on
+  // Basecamp so readers always know it wasn't typed by a human.
+  const CC_DISCLOSE_PREFIX = "هذه رسالة مؤتمة 🤖 من Claude";
   const CC_LOOPS = [
     { key: "oneshot", label: "One-shot" },
     { key: "15min", label: "15 min" },
@@ -623,17 +626,20 @@
   // Only the typed prompt + the pane's URL + our fixed template go to the
   // worker — never text scraped from the page (it runs unattended with
   // --dangerously-skip-permissions; page content is untrusted).
-  function ccPrompt(typed, loop, url, replyWhenDone) {
+  function ccPrompt(typed, loop, url, replyWhenDone, disclose) {
     const watch = loop === "oneshot"
       ? "Handle it once — do NOT set up a watch loop."
       : `Then /loop ${loop} — keep watching this thread and respond as needed.`;
     const reply = replyWhenDone
       ? ` When the task is done, reply to the thread and @-mention the people relevant/related to the task.`
       : "";
+    const prefix = disclose
+      ? ` Start EVERY message you post to Basecamp with this exact line, then a blank line: ${CC_DISCLOSE_PREFIX}`
+      : "";
     return (
       `${typed.trim()}\n\n` +
       `Basecamp thread: ${url}\n\n` +
-      `Use /basecamp to read this thread. ${watch}${reply} ` +
+      `Use /basecamp to read this thread. ${watch}${reply}${prefix} ` +
       `If you have no idea what to do, or you're afraid of making a mistake, ` +
       `send Faris a macOS notification (osascript -e 'display notification "…" with title "CC worker"') and hold off.`
     );
@@ -789,6 +795,16 @@
     replyRow.appendChild(ccEl("span", null, "Reply when done (@-mention relevant people)"));
     pop.appendChild(replyRow);
 
+    // "Mention this was automated" — worker prefixes every Basecamp message
+    // with CC_DISCLOSE_PREFIX so readers know it wasn't typed by a human
+    const discloseRow = ccEl("label", "bce-ccpop__reply");
+    const discloseCb = ccEl("input");
+    discloseCb.type = "checkbox";
+    discloseCb.checked = true; // default on: always disclose automation
+    discloseRow.appendChild(discloseCb);
+    discloseRow.appendChild(ccEl("span", null, `Mention that this is an automated message (“${CC_DISCLOSE_PREFIX}”)`));
+    pop.appendChild(discloseRow);
+
     const launch = ccEl("button", "bce-ccpop__launch", "Launch");
     launch.type = "button";
     pop.appendChild(launch);
@@ -825,7 +841,7 @@
       launch.disabled = true;
       setStatus("busy", "Spawning worker…");
       const title = "bc " + (typed ? typed.slice(0, 40) : "auto-respond");
-      const r = await hqSend({ type: "hqSpawn", title, prompt: ccPrompt(prompt, loop, url, replyCb.checked), workdir: CC_WORKDIR });
+      const r = await hqSend({ type: "hqSpawn", title, prompt: ccPrompt(prompt, loop, url, replyCb.checked, discloseCb.checked), workdir: CC_WORKDIR });
       if (!r.ok) {
         // Backend down is the common first-run failure — show how to start it.
         const hint = /unreachable/i.test(r.error || "") ? "Start the backend:\n" + CC_SETUP_HINT : null;
