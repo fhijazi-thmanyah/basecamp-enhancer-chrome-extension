@@ -143,14 +143,6 @@
       </div>
     </div>
 
-    <label class="row" for="ccLaunch" id="ccRow" hidden>
-      <span class="label">Claude Code launcher<small>floating button → spawn an HQ worker on this convo</small></span>
-      <span class="switch">
-        <input type="checkbox" id="ccLaunch" />
-        <span class="slider"></span>
-      </span>
-    </label>
-
     <div class="subrow" id="emojiEditor">
       <small>Reaction bar — shown in this exact order; edit the set here (spaces optional)</small>
       <input type="text" id="reactionEmojis" spellcheck="false" autocomplete="off" />
@@ -159,6 +151,14 @@
         <button type="button" id="resetEmojis">Reset to defaults</button>
       </div>
     </div>
+
+    <label class="row" for="ccLaunch" id="ccRow" hidden>
+      <span class="label">Claude Code launcher<small>floating button → spawn a Claude worker on this convo</small></span>
+      <span class="switch">
+        <input type="checkbox" id="ccLaunch" />
+        <span class="slider"></span>
+      </span>
+    </label>
 
     <script src="popup.js"></script>
   </body>

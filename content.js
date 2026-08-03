@@ -27,6 +27,11 @@
   // build is plain Basecamp Enhancer. Flip to true to use it personally (the
   // `cc-launcher` branch does exactly that). Keep in sync with popup.js's copy.
   const CC_ENABLED = false;
+  // Per-session "HQ ↗" tray links deep-link into the local backend dashboard
+  // (http://127.0.0.1:8377/#w-<session>). Personal workflow, not part of the
+  // public build: OFF on master; the cc-launcher branch flips it alongside
+  // CC_ENABLED.
+  const CC_HQ_LINK = false;
 
   const DEFAULT_EMOJIS = ["👍", "👏", "🙌", "❤️", "😂", "😊", "🎉", "🚀"];
   // Inline-menu items in display order. `key` is matched (prefix, lowercase)
@@ -692,12 +697,24 @@
     }
   }
 
-  // Two URLs point at the same conversation if they differ only by fragment
-  // (main-view URLs can carry #__recording_… anchors) or by Basecamp's
-  // trailing @<message-id> position marker (chat hrefs carry the last-read
-  // message, so the SAME room yields different URLs across visits — matching
-  // on it made tray rows/busy-spin silently drop off on reopen).
-  const convoKey = (u) => String(u).split("#")[0].replace(/@\d+$/, "");
+  // Two URLs point at the same conversation if they name the same ping/chat,
+  // no matter which VIEW produced them. The same room appears as
+  // /my/sidebar/circles/<id> (side panel), /<acct>/circles/<id> (maximized),
+  // /buckets/<bucket>/chats/<id> (campfire) — plus per-visit decorations:
+  // #fragment (#__recording_… anchors), ?query, and Basecamp's trailing
+  // @<message-id> last-read position marker. Raw-URL matching gave the
+  // maximized and sidebar views of ONE ping different session trays, so the
+  // key is the /circles/<id> | /chats/<id> tail whenever the path has one.
+  const convoKey = (u) => {
+    try {
+      const x = new URL(u, location.href);
+      const path = x.pathname.replace(/@\d+$/, "");
+      const m = path.match(/\/(?:circles|chats)\/\d+/);
+      return x.origin + (m ? m[0] : path.replace("/my/sidebar/", "/"));
+    } catch {
+      return String(u);
+    }
+  };
   const sameConvo = (a, b) => convoKey(a) === convoKey(b);
 
   // Launched-session tray, persisted so it survives navigations/reloads.
@@ -936,12 +953,14 @@
         info.appendChild(name);
         info.appendChild(ccEl("small", null, s.title));
         row.appendChild(info);
-        // per-session HQ deep link → scrolls to & flashes THIS worker's card
-        const hq = ccEl("a", "bce-cc-hq", "HQ ↗");
-        hq.href = "http://127.0.0.1:8377/#w-" + encodeURIComponent(s.session);
-        hq.target = "_blank";
-        hq.title = "Open this session in the HQ dashboard";
-        row.appendChild(hq);
+        if (CC_HQ_LINK) {
+          // per-session HQ deep link → scrolls to & flashes THIS worker's card
+          const hq = ccEl("a", "bce-cc-hq", "HQ ↗");
+          hq.href = "http://127.0.0.1:8377/#w-" + encodeURIComponent(s.session);
+          hq.target = "_blank";
+          hq.title = "Open this session in the HQ dashboard";
+          row.appendChild(hq);
+        }
         const x = ccEl("button", "bce-cc-x", "✕");
         x.type = "button";
         x.title = "Kill this session (tmux + claude) and remove it";
