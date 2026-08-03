@@ -26,10 +26,62 @@ const DEFAULTS = {
   inlineMenus: true,
   bcFont: "plex", // "" = original | plex | sans | seriftext | serifdisplay (keep in sync with content.js)
   ccLaunch: true,
+  telemetry: true,
   reactionEmojis: DEFAULT_EMOJIS,
   menuItems: DEFAULT_MENU_ITEMS,
 };
-const TOGGLES = ["timeLabels", "rtl", "inlineReactions", "inlineMenus", "ccLaunch"];
+const TOGGLES = ["timeLabels", "rtl", "inlineReactions", "inlineMenus", "ccLaunch", "telemetry"];
+
+// setting_changed telemetry. Sent from HERE because the popup is the single
+// writer of settings — every open tab hears storage.onChanged, so capturing
+// there would duplicate the event per tab. Uses the same bundled posthog SDK
+// as content.js (vendor/posthog.js, loaded by popup.html); identity comes
+// from the bceWho cache content.js maintains (Basecamp email/person id).
+// Keep PH_KEY/PH_HOST in sync with content.js; empty key = no telemetry.
+const PH_KEY = "phc_zNZ5vwprEnyTuy5wGYf9WgutaV4GZZaBmp9tubfykmoZ";
+const PH_HOST = "https://us.i.posthog.com";
+
+let phStarted = false;
+if (PH_KEY && typeof posthog !== "undefined") {
+  phStarted = true;
+  posthog.init(PH_KEY, {
+    api_host: PH_HOST,
+    defaults: "2026-05-30", // versioned SDK defaults (per PostHog's snippet)
+    persistence: "localStorage", // the popup page's own localStorage
+    capture_pageview: false, // popup opens aren't page visits
+    autocapture: false,
+    disable_session_recording: true,
+    advanced_disable_decide: true,
+    advanced_disable_feature_flags: true,
+    opt_out_capturing_by_default: true, // opted in below iff the toggle is on
+  });
+  posthog.register({ version: chrome.runtime.getManifest().version });
+  chrome.storage.sync.get({ telemetry: true }, ({ telemetry }) => {
+    if (telemetry) posthog.opt_in_capturing({ captureEventName: null });
+  });
+  chrome.storage.local.get("bceWho", ({ bceWho }) => {
+    const who = bceWho || {};
+    if (who.email || who.id) {
+      posthog.identify(who.email || "bc:" + who.id, {
+        email: who.email || undefined, name: who.name || undefined,
+        basecamp_person_id: who.id || undefined,
+      });
+    }
+  });
+}
+
+function tele(setting, value) {
+  if (!phStarted) return;
+  // flip the SDK's opt state FIRST so turning off is silent (capture below
+  // no-ops once opted out) and turning on reports itself
+  if (setting === "telemetry") {
+    if (value) posthog.opt_in_capturing({ captureEventName: null });
+    else posthog.opt_out_capturing();
+  }
+  posthog.capture("setting_changed", {
+    setting, value: Array.isArray(value) ? value.length + " items" : value,
+  });
+}
 
 // Split a string into emoji, honoring multi-codepoint graphemes (ZWJ, flags,
 // skin tones) and ignoring whitespace/commas — so "👍👏 🙌, 🎉" all work.
@@ -81,6 +133,7 @@ function saveMenuItems() {
     on: li.querySelector("input").checked,
   }));
   chrome.storage.sync.set({ menuItems: items });
+  tele("menuItems", items);
 }
 
 let dragEl = null;
@@ -124,6 +177,7 @@ chrome.storage.sync.get(DEFAULTS, (settings) => {
 for (const key of TOGGLES) {
   document.getElementById(key).addEventListener("change", (e) => {
     chrome.storage.sync.set({ [key]: e.target.checked });
+    tele(key, e.target.checked);
     if (key === "inlineReactions") emojiEditor.classList.toggle("disabled", !e.target.checked);
     if (key === "inlineMenus") menuEditor.classList.toggle("disabled", !e.target.checked);
   });
@@ -131,6 +185,7 @@ for (const key of TOGGLES) {
 
 document.getElementById("bcFont").addEventListener("change", (e) => {
   chrome.storage.sync.set({ bcFont: e.target.value });
+  tele("bcFont", e.target.value);
 });
 
 // Save emoji as the user edits (debounced so we don't thrash storage.sync).
@@ -139,7 +194,10 @@ emojiInput.addEventListener("input", () => {
   const emojis = parseEmojis(emojiInput.value);
   showCount(emojis.length);
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => chrome.storage.sync.set({ reactionEmojis: emojis }), 300);
+  saveTimer = setTimeout(() => {
+    chrome.storage.sync.set({ reactionEmojis: emojis });
+    tele("reactionEmojis", emojis);
+  }, 300);
 });
 
 document.getElementById("resetEmojis").addEventListener("click", () => {

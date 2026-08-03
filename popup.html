@@ -152,6 +152,14 @@
       </div>
     </div>
 
+    <label class="row" for="telemetry">
+      <span class="label">Usage analytics<small>page visits, feature usage &amp; error reports — tied to your Basecamp email</small></span>
+      <span class="switch">
+        <input type="checkbox" id="telemetry" />
+        <span class="slider"></span>
+      </span>
+    </label>
+
     <label class="row" for="ccLaunch" id="ccRow" hidden>
       <span class="label">Claude Code launcher<small>floating button → spawn a Claude worker on this convo</small></span>
       <span class="switch">
@@ -160,6 +168,7 @@
       </span>
     </label>
 
+    <script src="vendor/posthog.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>
