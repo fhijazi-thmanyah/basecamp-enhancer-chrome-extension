@@ -55,9 +55,11 @@ remotely loading" + "put this in a separate branch".
   Watch for a popup-CSP issue on first open (none expected — the SDK is
   local and session recording is off).
 
-## To enable
+## Enabled
 
-1. PostHog → project settings → copy the `phc_…` Project API key.
-2. Paste into `PH_KEY` in **content.js AND popup.js** (and set `PH_HOST` in
-   both if not US cloud).
-3. Reload the extension.
+The real project key (project 540812, US Cloud) is committed in `PH_KEY`
+(content.js + popup.js) with `defaults: "2026-05-30"` — `phc_` tokens are
+publishable client keys, safe in the public repo. A wiring-test event
+(`bce_wiring_test`) was sent via the capture API with this key; look for it
+in PostHog → Activity to confirm the pipe. Real events start flowing once a
+build of this branch is loaded.

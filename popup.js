@@ -38,7 +38,7 @@ const TOGGLES = ["timeLabels", "rtl", "inlineReactions", "inlineMenus", "ccLaunc
 // as content.js (vendor/posthog.js, loaded by popup.html); identity comes
 // from the bceWho cache content.js maintains (Basecamp email/person id).
 // Keep PH_KEY/PH_HOST in sync with content.js; empty key = no telemetry.
-const PH_KEY = "";
+const PH_KEY = "phc_zNZ5vwprEnyTuy5wGYf9WgutaV4GZZaBmp9tubfykmoZ";
 const PH_HOST = "https://us.i.posthog.com";
 
 let phStarted = false;
@@ -46,6 +46,7 @@ if (PH_KEY && typeof posthog !== "undefined") {
   phStarted = true;
   posthog.init(PH_KEY, {
     api_host: PH_HOST,
+    defaults: "2026-05-30", // versioned SDK defaults (per PostHog's snippet)
     persistence: "localStorage", // the popup page's own localStorage
     capture_pageview: false, // popup opens aren't page visits
     autocapture: false,
