@@ -1,58 +1,47 @@
 # <img src="icons/icon128.png" width="48" align="center" alt="Basecamp Enhancer icon" /> Basecamp Enhancer
 
-![icons/icon128.png](icons/icon128.png)
+<div dir="rtl">
 
-A tiny Chrome extension (Manifest V3) that runs **only on Basecamp** and adds five quality-of-life fixes:
+إضافة كروم صغيرة تشتغل **فقط على Basecamp** وتضيف خمس تحسينات، كلها تشتغل تلقائيًا وباستمرار:
 
-1. **Relative timestamps** — appends ` (X ago)` to `<time>` elements (e.g. `Jun 2 (6 days ago)`), computed from the `datetime` attribute via `Intl.RelativeTimeFormat`. Refreshed every 60 s. Timestamps within ±1 day are skipped, since Basecamp already shows those as the word "yesterday"/"today"/"tomorrow".
-2. **Force RTL** — Arabic-majority content renders right-to-left even when a paragraph *starts* with an English word or number (where the browser's own `dir="auto"` guesses LTR from the first character). Each paragraph/list/heading is judged by counting Arabic vs Latin letters, so mixed documents lay out per-block: Arabic-majority blocks go RTL, English blocks stay LTR. Editable fields (textareas, text inputs, the rich-text editor) auto-direct live as you type.
+1. **توقيت نسبي** — يضيف «(قبل X)» بجانب كل تاريخ، مثل `Jun 2 (6 days ago)`.
+2. **إجبار الاتجاه RTL** — النص العربي ينعرض يمين-إلى-يسار حتى لو بدأ السطر بكلمة إنجليزية أو رقم، والكتابة بالعربي في خانات الإدخال تتجه صح وأنت تكتب.
 
-   ![RTL: Arabic auto-directs right-to-left live as you type, while embedded English words and numbers stay correctly ordered](docs/media/bce-rtl.gif)
-3. **Quick reactions** — one-click boost emoji so you react without opening the "…" picker. The set is **fixed and yours to arrange**: it shows exactly the emoji you configure in the popup, in the order you set them (no automatic recently-used reshuffling). On chat/pings and comments the emoji live in the hover bar (see the demo under **Hover action bar** below); on the main card/message/todo detail they sit inline next to Basecamp's "+".
-4. **Hover action bar** — a **Google-Chat–style toolbar** revealed on hover, holding the quick-react emoji **plus the record's whole "…" menu** (**Edit, Reply, Bookmark, Bubble up, Copy link, Delete / Put in the trash, …**) — so you never open the kebab. On **chat/pings** it sits just above each bubble, **matching the bubble's width** (wrapping onto extra rows) so sent/received messages each get a toolbar aligned to their own bubble; on **comments** (cards, todos, messages) it's a compact pill at the top-right. It's Basecamp's own menu (its controllers reconnect, so every action works natively), loads lazily as records scroll into view, and — because it floats — never disturbs Basecamp's layout. Menu items show as **icons only** (labels appear as tooltips) to stay compact. **Configure it from the popup**: choose which menu items appear and drag to reorder them. Exactly one bar shows at a time, and it never appears on the comment box you're still writing in.
+   ![العربي يتجه يمين-إلى-يسار مباشرة أثناء الكتابة، والكلمات الإنجليزية والأرقام تبقى بترتيبها الصحيح](docs/media/bce-rtl.gif)
+3. **تفاعلات سريعة** — إيموجي بضغطة واحدة بدون فتح قائمة «…»، وتقدر تغيّر المجموعة وترتيبها من الإعدادات (الترتيب ثابت مثل ما تحطه).
+4. **شريط إجراءات عند التمرير** — شريط بأسلوب Google Chat يظهر فوق الرسالة لما تمرّر عليها: إيموجي التفاعل + قائمة الإجراءات كاملة (رد، تعديل، حفظ، نسخ الرابط، حذف…) بدون ما تفتح أي قائمة.
 
-   ![Hover action bar: hovering a message reveals a Google-Chat–style toolbar with one-click reaction emoji plus the full action menu (Edit, Reply, Bookmark, Bubble up, Copy link, Delete); it follows the pointer from message to message](docs/media/bce-hoverbar.gif)
-5. **Thmanyah font** — a font picker for the whole Basecamp UI. Default is **IBM Plex Sans Arabic** (the typeface [thmanyah.com](https://thmanyah.com) renders its articles in; bundled as woff2, SIL OFL licensed); the dropdown also offers the **Thmanyah Sans / Serif Text / Serif Display** brand families, or "Basecamp original" to turn the swap off. Code blocks keep their monospace font, and anything the chosen typeface doesn't cover (emoji etc.) falls back to the system stack.
+   ![تمرير الماوس على رسالة يُظهر شريط أدوات فيه إيموجي التفاعل وقائمة الإجراءات كاملة](docs/media/bce-hoverbar.gif)
+5. **خط ثمانية** — بدّل خط Basecamp كله إلى **IBM Plex Sans Arabic** (الخط اللي يستخدمه موقع ثمانية) أو أحد خطوط ثمانية الأخرى، من قائمة في الإعدادات.
 
-> **Note:** the extension also contains an experimental **Claude Code launcher** (spawns a local Claude Code worker to handle/watch a conversation), but it's a personal feature that needs a local HQ server, so it's **disabled by default and hidden** in the published build (gated behind a `CC_ENABLED` flag). It isn't part of the five features above.
+## التثبيت — خطوة بخطوة (ما يحتاج أي خبرة)
 
-All run continuously: a `MutationObserver` enhances new content as Basecamp streams it in, and every operation is **idempotent** — re-running never produces duplicate badges, bars, or re-set attributes. Turbo re-renders (cable-stream updates, morph refreshes) are caught via `turbo:*` events so decorations restore instantly instead of flickering.
+1. **حمّل الإضافة**: [اضغط هنا لتنزيل ملف ZIP](https://github.com/Thmanyah-LLC/basecamp-enhancer-chrome-extension/archive/refs/heads/master.zip)
+2. **فك الضغط** عن الملف (دبل-كليك عليه) — بيطلع لك مجلد.
+3. افتح كروم واكتب في شريط العنوان: `chrome://extensions` واضغط Enter.
+4. فعّل **Developer mode** (المفتاح اللي فوق على اليمين):
 
-## Toggles & options
+   ![مفتاح Developer mode أعلى يمين صفحة chrome://extensions](docs/media/screenshot-developer-mode.png)
+5. اضغط **Load unpacked** واختر المجلد اللي طلع لك من فك الضغط:
 
-Click the toolbar icon for a popup that enables/disables each feature independently, plus an **emoji editor** for the inline-reaction set (type/paste any emoji — spaces optional; "Reset to defaults" restores the standard set). Changes apply **live** to open Basecamp tabs (no reload) and persist via `chrome.storage.sync`. With all toggles off, the extension fully reverts its changes — plain Basecamp.
+   ![اختيار مجلد basecamp-enhancer-chrome-extension-master من نافذة الملفات](docs/media/screenshot-choose-folder.png)
+6. افتح [app.basecamp.com](https://app.basecamp.com) (لازم تكون مسجّل دخول) — وبس، كل شيء يشتغل.
 
-## Install (unpacked)
+## الإعدادات
 
-1. Open `chrome://extensions`
-2. Toggle **Developer mode** (top-right) on
-3. Click **Load unpacked** and select this folder (`basecamp-enhancer/`)
-4. Open / reload [app.basecamp.com](https://app.basecamp.com) — you must be signed in
+اضغط أيقونة الإضافة في شريط كروم: كل ميزة لها مفتاح مستقل، والتغييرات تنطبق **فورًا** على تبويبات Basecamp المفتوحة بدون إعادة تحميل. أطفئ كل المفاتيح = يرجع Basecamp عادي تمامًا.
 
-## Files
+> **ملاحظة:** فيه ميزة تجريبية إضافية (Claude Code launcher — تشغّل وكيل Claude على المحادثة) لكنها **مطفأة ومخفية** في النسخة المنشورة لأنها تحتاج خادم محلي. تفاصيل تشغيلها تحت.
 
-| File | Purpose |
-|------|---------|
-| `manifest.json` | MV3 manifest, scoped to `app.basecamp.com` + `3.basecamp.com`, `run_at: document_start`, `storage` permission, `host_permissions` for the local HQ server, toolbar `action`, background service worker |
-| `content.js` | All page logic — time badges, RTL auto-dir, hover bars, CC launcher UI, settings/apply-revert, observer wiring |
-| `background.js` | Service worker for the (gated) Claude Code launcher — the only code that talks to the local HQ server (content scripts are CORS-bound); inert when `CC_ENABLED` is off |
-| `popup.html` / `popup.js` | Toolbar popup with the feature toggles |
-| `styles.css` | Badge styling, `unicode-bidi: plaintext` bidi safety net, IBM Plex Sans Arabic `@font-face`s + override rule |
-| `fonts/` | Bundled IBM Plex Sans Arabic weights (300–700, woff2) + its OFL license |
-
-## Notes
-
-- Scoped via `content_scripts.matches`; it injects on no other site.
-- The RTL selector list (`content.js` → `RTL_SELECTORS`) targets Basecamp content classes — chiefly `.formatted_content` (rendered messages/comments/descriptions), plus `.trix-content`, `.message__content`, `.todo__content`, etc. Add selectors there if a specific view isn't picking up direction.
+</div>
 
 ## Backend setup (Claude Code launcher only)
 
-Only needed if you run a build with `CC_ENABLED = true` (the launcher is off and hidden in the published build — see the note above). The launcher spawns unattended [Claude Code](https://code.claude.com) workers through a small **local** backend on `127.0.0.1:8377`; the extension never talks to anything else.
+Only needed for builds with `CC_ENABLED = true` (the launcher is off and hidden in the published build). The backend is [cc-tmux-api](https://github.com/FarisHijazi/cc-tmux-api) — a small local daemon on `127.0.0.1:8377` that spawns/lists/kills the workers (tmux-backed, revives them after reboot).
 
-1. **Claude Code** — installed and signed in.
-2. **Remote control on by default** — inside any Claude Code session run `/config` and set **"Enable Remote Control for all sessions"** to `true`. This is what gives every spawned worker its shareable `claude.ai/code/session_…` link.
-3. **`uv` and `tmux`** — e.g. `brew install uv tmux` (workers run inside tmux sessions; the backend runs via [`uvx`](https://docs.astral.sh/uv/guides/tools/)).
-4. **Create the workspace dir and start the backend.** `BCE_WORKSPACE_DIR` is the backend's base directory (default `~/.basecamp-enhancer/`); each session gets its own folder under `$BCE_WORKSPACE_DIR/workspace/<session-id>/` (working files, `meta.json`, and the `.done` marker that ends its revive-after-reboot lifecycle):
+1. [Claude Code](https://code.claude.com) installed and signed in; run `/config` inside any session and set **"Enable Remote Control for all sessions"** to `true` (this gives each worker its shareable `claude.ai/code/session_…` link).
+2. `brew install uv tmux`
+3. Create the workspace dir and start the backend (`BCE_WORKSPACE_DIR` is its base dir; each session keeps its files under `$BCE_WORKSPACE_DIR/workspace/<session-id>/`):
 
    ```bash
    export BCE_WORKSPACE_DIR="${BCE_WORKSPACE_DIR:-$HOME/.basecamp-enhancer}"
@@ -60,6 +49,4 @@ Only needed if you run a build with `CC_ENABLED = true` (the launcher is off and
    uvx git+https://github.com/FarisHijazi/cc-tmux-api
    ```
 
-   The backend is [cc-tmux-api](https://github.com/FarisHijazi/cc-tmux-api) — a small standalone daemon (spawn/list/kill over HTTP on `127.0.0.1:8377`, tmux-backed, with status detection and revival after reboot). See its README for the API and configuration.
-
-If the extension can't reach the backend when you hit **Launch**, the popover shows this same command inline.
+If the extension can't reach the backend, the launch popover shows this same command inline.
