@@ -73,9 +73,10 @@
   // is a global in our isolated world. It gives sessions, autocaptured
   // activity, SPA pageviews (Turbo drives pushState), batching and retries.
   // Two gates: the popup's "Usage analytics" toggle (settings.telemetry —
-  // flipping it off opts the SDK out, zero further requests) and PH_KEY
-  // (empty = the SDK never initializes at all). Keep PH_KEY in sync with
-  // popup.js, which loads the same vendor file for its own events.
+  // flipping it off opts the SDK out: no events, no recording; only the
+  // remote-config fetch remains) and PH_KEY (empty = the SDK never
+  // initializes at all). Keep PH_KEY in sync with popup.js, which loads the
+  // same vendor file for its own events.
   const PH_KEY = "phc_zNZ5vwprEnyTuy5wGYf9WgutaV4GZZaBmp9tubfykmoZ";
   const PH_HOST = "https://us.i.posthog.com";
 
@@ -93,11 +94,14 @@
         persistence: "localStorage", // page localStorage; no cookies
         capture_pageview: "history_change", // initial + Turbo pushState navigations
         autocapture: true, // activity: clicks on the Basecamp UI
-        disable_session_recording: true,
-        // no /decide (remote config / feature flags) call — opted-out or idle
-        // means literally zero requests
-        advanced_disable_decide: true,
-        advanced_disable_feature_flags: true,
+        capture_dead_clicks: true,
+        capture_heatmaps: true,
+        // Full capture (v1.18.0): remote config stays ENABLED — autocapture and
+        // session replay only activate once the SDK has fetched it, so the old
+        // advanced_disable_decide/-feature_flags flags silently killed both.
+        // Replay also needs the project-side "Record user sessions" setting
+        // (enabled 2026-08-04); masking follows the project's remote config.
+        disable_session_recording: false,
       });
       posthog.register({ version: chrome.runtime.getManifest().version });
       phIdentity().then((who) => {
