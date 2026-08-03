@@ -691,8 +691,12 @@
   }
 
   // Two URLs point at the same conversation if they differ only by fragment
-  // (main-view URLs can carry #__recording_… anchors).
-  const sameConvo = (a, b) => String(a).split("#")[0] === String(b).split("#")[0];
+  // (main-view URLs can carry #__recording_… anchors) or by Basecamp's
+  // trailing @<message-id> position marker (chat hrefs carry the last-read
+  // message, so the SAME room yields different URLs across visits — matching
+  // on it made tray rows/busy-spin silently drop off on reopen).
+  const convoKey = (u) => String(u).split("#")[0].replace(/@\d+$/, "");
+  const sameConvo = (a, b) => convoKey(a) === convoKey(b);
 
   // Launched-session tray, persisted so it survives navigations/reloads.
   function loadCcSessions() {
@@ -918,9 +922,15 @@
         row.appendChild(dot);
         const info = ccEl("span", "bce-cc-info");
         // the session name itself becomes the claude.ai link once the
-        // remote-control bridge connects (pollTray sets href from web_url)
+        // remote-control bridge connects (pollTray sets href from web_url and
+        // persists it, so a reopened tray links even while HQ is unreachable)
         const name = ccEl("a", "bce-cc-name");
         name.appendChild(ccEl("code", null, s.session));
+        if (s.web_url) {
+          name.href = s.web_url;
+          name.target = "_blank";
+          name.title = "Open this session in claude.ai Claude Code";
+        }
         info.appendChild(name);
         info.appendChild(ccEl("small", null, s.title));
         row.appendChild(info);
@@ -983,6 +993,12 @@
           name.href = w.web_url;
           name.target = "_blank";
           name.title = "Open this session in claude.ai Claude Code";
+          // the claude.ai URL is immutable — persist it so future trays can
+          // render the link without needing the backend up
+          loadCcSessions().then((all) => {
+            const e = all.find((v) => v.session === row.dataset.session);
+            if (e && !e.web_url) { e.web_url = w.web_url; saveCcSessions(all); }
+          });
         }
       }
     }
