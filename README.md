@@ -1,5 +1,7 @@
 # <img src="icons/icon128.png" width="48" align="center" alt="Basecamp Enhancer icon" /> Basecamp Enhancer
 
+![icons/icon128.png](icons/icon128.png)
+
 A tiny Chrome extension (Manifest V3) that runs **only on Basecamp** and adds five quality-of-life fixes:
 
 1. **Relative timestamps** — appends ` (X ago)` to `<time>` elements (e.g. `Jun 2 (6 days ago)`), computed from the `datetime` attribute via `Intl.RelativeTimeFormat`. Refreshed every 60 s. Timestamps within ±1 day are skipped, since Basecamp already shows those as the word "yesterday"/"today"/"tomorrow".
