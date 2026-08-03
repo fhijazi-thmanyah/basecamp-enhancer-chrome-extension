@@ -633,7 +633,9 @@
   // surviving shell, so we must poll /api/workers afterwards to confirm the
   // worker actually came up (and to show live status in the tray).
 
-  const CC_WORKDIR = "~/Projects/thmanyah.d/career-coach";
+  // No workdir is sent with spawns: the backend picks its own default
+  // (cc-tmux-api: $CC_TMUX_WORKDIR or $HOME; HQ pins its default server-side).
+  // Keeping machine-local paths out of this public repo is deliberate.
   // Shown in the launch popover when the backend at 127.0.0.1:8377 is
   // unreachable — keep in sync with README.md → "Backend setup".
   const CC_SETUP_HINT =
@@ -880,7 +882,7 @@
       launch.disabled = true;
       setStatus("busy", "Spawning worker…");
       const title = "bc " + (typed ? typed.slice(0, 40) : "auto-respond");
-      const r = await hqSend({ type: "hqSpawn", title, prompt: ccPrompt(prompt, loop, url, replyCb.checked, discloseCb.checked), workdir: CC_WORKDIR });
+      const r = await hqSend({ type: "hqSpawn", title, prompt: ccPrompt(prompt, loop, url, replyCb.checked, discloseCb.checked) });
       if (!r.ok) {
         // Backend down is the common first-run failure — show how to start it.
         const hint = /unreachable/i.test(r.error || "") ? "Start the backend:\n" + CC_SETUP_HINT : null;

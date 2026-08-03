@@ -16,7 +16,7 @@
 
 ## التثبيت — خطوة بخطوة (ما يحتاج أي خبرة)
 
-1. **حمّل الإضافة**: [اضغط هنا لتنزيل ملف ZIP](https://github.com/Thmanyah-LLC/basecamp-enhancer-chrome-extension/archive/refs/heads/master.zip)
+1. **حمّل الإضافة**: [اضغط هنا لتنزيل ملف ZIP](https://github.com/fhijazi-thmanyah/basecamp-enhancer-chrome-extension/archive/refs/heads/master.zip)
 2. **فك الضغط** عن الملف (دبل-كليك عليه) — بيطلع لك مجلد.
 3. افتح كروم واكتب في شريط العنوان: `chrome://extensions` واضغط Enter.
 4. فعّل **Developer mode** (المفتاح اللي فوق على اليمين):
