@@ -331,6 +331,8 @@ form.bce-cc-beside > .relative { position: relative; }
   margin-top: -2px;
 }
 .bce-ccpop__reply input { margin: 0; flex: none; cursor: pointer; }
+/* disclosure checkbox is moot while "Reply when done" is off */
+.bce-ccpop__reply--off { opacity: 0.4; pointer-events: none; }
 .bce-ccpop__seg { display: flex; gap: 4px; flex: 1; }
 .bce-ccpop__segbtn {
   flex: 1;

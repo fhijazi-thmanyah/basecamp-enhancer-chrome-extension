@@ -968,6 +968,15 @@
     discloseRow.appendChild(ccEl("span", null, `Mention that this is an automated message (“${CC_DISCLOSE_PREFIX}”)`));
     pop.appendChild(discloseRow);
 
+    // the disclosure prefix only applies to messages the worker posts, so the
+    // checkbox is moot (grayed) while "Reply when done" is off
+    const syncDisclose = () => {
+      discloseCb.disabled = !replyCb.checked;
+      discloseRow.classList.toggle("bce-ccpop__reply--off", !replyCb.checked);
+    };
+    replyCb.addEventListener("change", syncDisclose);
+    syncDisclose();
+
     const launch = ccEl("button", "bce-ccpop__launch", "Launch");
     launch.type = "button";
     pop.appendChild(launch);
