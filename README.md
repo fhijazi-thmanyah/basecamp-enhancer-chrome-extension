@@ -39,7 +39,7 @@
 
 ## Backend setup (Claude Code launcher only)
 
-Only needed for builds with `CC_ENABLED = true` (the launcher is off and hidden in the published build). The backend is [cc-tmux-api](https://github.com/FarisHijazi/cc-tmux-api) — a small local daemon on `127.0.0.1:8377` that spawns/lists/kills the workers (tmux-backed, revives them after reboot).
+Only needed if the `cc-launcher` PostHog feature flag is enabled for your account (the launcher is invisible to everyone else). The backend is [cc-tmux-api](https://github.com/FarisHijazi/cc-tmux-api) — a small local daemon on `127.0.0.1:8377` that spawns/lists/kills the workers (tmux-backed, revives them after reboot).
 
 1. [Claude Code](https://code.claude.com) installed and signed in; run `/config` inside any session and set **"Enable Remote Control for all sessions"** to `true` (this gives each worker its shareable `claude.ai/code/session_…` link).
 2. `brew install uv tmux`

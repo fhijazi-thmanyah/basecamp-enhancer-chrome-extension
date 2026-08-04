@@ -21,17 +21,19 @@
   const ctxAlive = () => { try { return !!(chrome.runtime && chrome.runtime.id); } catch { return false; } };
 
   // ---- Feature gate: Claude Code launcher ----------------------------------
-  // The CC launcher is a PERSONAL, unpublished feature — it needs the local HQ
-  // server, so it's meaningless for public users. Ship it OFF: with CC_ENABLED
-  // false there's no button and the popup hides its toggle, so the published
-  // build is plain Basecamp Enhancer. Flip to true to use it personally (the
-  // `cc-launcher` branch does exactly that). Keep in sync with popup.js's copy.
-  const CC_ENABLED = false;
-  // Per-session "HQ ↗" tray links deep-link into the local backend dashboard
-  // (http://127.0.0.1:8377/#w-<session>). Personal workflow, not part of the
-  // public build: OFF on master; the cc-launcher branch flips it alongside
-  // CC_ENABLED.
-  const CC_HQ_LINK = false;
+  // The CC launcher is a PERSONAL feature — it needs the local backend, so it's
+  // meaningless for public users. Since v1.19.0 it's gated by POSTHOG FEATURE
+  // FLAGS instead of the old compile-time CC_ENABLED/CC_HQ_LINK consts (which
+  // needed a separate `cc-launcher` branch): `cc-launcher` shows the launcher,
+  // `cc-hq-link` adds the per-session "HQ ↗" tray links to the local dashboard
+  // (http://127.0.0.1:8377/#w-<session>). Both target allowed emails only —
+  // everyone else resolves false, so the published build stays a clean
+  // launcher-less extension on ONE branch. Values are cached in
+  // chrome.storage.local.bceCcFlags so the launcher survives reloads without
+  // waiting on the network, and so the popup (which doesn't load flags) can
+  // show/hide its toggle row. Telemetry off ⇒ flags never refresh; the cache
+  // keeps the last known state.
+  let ccFlags = { launcher: false, hqLink: false };
 
   const DEFAULT_EMOJIS = ["👍", "👏", "🙌", "❤️", "😂", "😊", "🎉", "🚀"];
   // Inline-menu items in display order. `key` is matched (prefix, lowercase)
@@ -78,7 +80,11 @@
   // initializes at all). Keep PH_KEY in sync with popup.js, which loads the
   // same vendor file for its own events.
   const PH_KEY = "phc_zNZ5vwprEnyTuy5wGYf9WgutaV4GZZaBmp9tubfykmoZ";
-  const PH_HOST = "https://us.i.posthog.com";
+  // Our own domain, reverse-proxying to PostHog US Cloud (ftower
+  // compose/posthog). Owning the endpoint means a later self-host is a proxy
+  // retarget — no extension update. PH_UI stays the Cloud UI for links.
+  const PH_HOST = "https://posthog.fhijazi.com";
+  const PH_UI = "https://us.posthog.com";
 
   let phStarted = false;
 
@@ -90,6 +96,7 @@
       phStarted = true;
       posthog.init(PH_KEY, {
         api_host: PH_HOST,
+        ui_host: PH_UI, // api_host is our proxy; toolbar/links belong to Cloud
         defaults: "2026-05-30", // versioned SDK defaults (per PostHog's snippet)
         persistence: "localStorage", // page localStorage; no cookies
         capture_pageview: "history_change", // initial + Turbo pushState navigations
@@ -104,6 +111,19 @@
         disable_session_recording: false,
       });
       posthog.register({ version: chrome.runtime.getManifest().version });
+      // CC-launcher gating rides on feature flags (fires on every flags load;
+      // send_event:false — a gate check isn't usage worth an event)
+      posthog.onFeatureFlags(() => {
+        const next = {
+          launcher: !!posthog.isFeatureEnabled("cc-launcher", { send_event: false }),
+          hqLink: !!posthog.isFeatureEnabled("cc-hq-link", { send_event: false }),
+        };
+        if (next.launcher !== ccFlags.launcher || next.hqLink !== ccFlags.hqLink) {
+          ccFlags = next;
+          if (ctxAlive()) try { chrome.storage.local.set({ bceCcFlags: next }); } catch { }
+          reconcile();
+        }
+      });
       phIdentity().then((who) => {
         if (who.email || who.id) {
           posthog.identify(who.email || "bc:" + who.id, {
@@ -1074,7 +1094,7 @@
         info.appendChild(name);
         info.appendChild(ccEl("small", null, s.title));
         row.appendChild(info);
-        if (CC_HQ_LINK) {
+        if (ccFlags.hqLink) {
           // per-session HQ deep link → scrolls to & flashes THIS worker's card
           const hq = ccEl("a", "bce-cc-hq", "HQ ↗");
           hq.href = "http://127.0.0.1:8377/#w-" + encodeURIComponent(s.session);
@@ -1279,7 +1299,7 @@
     if (settings.inlineReactions) applyInlineReactions(root); // standalone boost bars
     if (settings.inlineReactions || settings.inlineMenus) applyHoverBars(root); // records
     // a newly opened ping window is a new pane — give it its button right away
-    if (CC_ENABLED && settings.ccLaunch) applyCcLaunchers();
+    if (ccFlags.launcher && settings.ccLaunch) applyCcLaunchers();
   }
 
   // Theme: our overlays can't use Canvas/CanvasText (Dark Reader can't rewrite
@@ -1317,7 +1337,7 @@
     if (!settings.inlineMenus) removeHoverMenus();
     // Launcher buttons are per-pane; Turbo body swaps drop them, and the
     // turbo:* → reconcile listeners bring them right back.
-    if (CC_ENABLED && settings.ccLaunch) applyCcLaunchers(); else removeCcLaunchers();
+    if (ccFlags.launcher && settings.ccLaunch) applyCcLaunchers(); else removeCcLaunchers();
   }
 
   // Run as early as possible (document_start): the observer below catches most
@@ -1329,6 +1349,15 @@
     settings = { ...DEFAULTS, ...stored };
     reconcile();
     phApply(); // SDK starts only after the stored opt-out is known
+  });
+
+  // Seed the CC-launcher gate from the cached flag values so the launcher shows
+  // immediately on load; the live flags (phApply → onFeatureFlags) correct it.
+  chrome.storage.local.get("bceCcFlags", (st) => {
+    if (st && st.bceCcFlags) {
+      ccFlags = { launcher: !!st.bceCcFlags.launcher, hqLink: !!st.bceCcFlags.hqLink };
+      reconcile();
+    }
   });
 
   // Toolbar toggles write to storage; apply/revert live without a reload.

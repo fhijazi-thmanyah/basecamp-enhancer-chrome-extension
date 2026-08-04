@@ -1,10 +1,9 @@
 // Popup: reflect stored settings and write changes back. The content script
 // listens on chrome.storage.onChanged and applies/reverts each feature live.
 
-// Feature gate — keep in sync with content.js. The Claude Code launcher is a
-// personal, unpublished feature; false hides its toggle row so the published
-// build never surfaces it. The `cc-launcher` branch flips this to true.
-const CC_ENABLED = false;
+// Feature gate: the Claude Code launcher toggle row is shown only for users
+// whose PostHog `cc-launcher` flag is on. The popup never loads flags itself —
+// content.js resolves them and caches into chrome.storage.local.bceCcFlags.
 
 const DEFAULT_EMOJIS = ["👍", "👏", "🙌", "❤️", "😂", "😊", "🎉", "🚀"];
 // keep in sync with content.js DEFAULT_MENU_ITEMS
@@ -39,7 +38,8 @@ const TOGGLES = ["timeLabels", "rtl", "inlineReactions", "inlineMenus", "ccLaunc
 // from the bceWho cache content.js maintains (Basecamp email/person id).
 // Keep PH_KEY/PH_HOST in sync with content.js; empty key = no telemetry.
 const PH_KEY = "phc_zNZ5vwprEnyTuy5wGYf9WgutaV4GZZaBmp9tubfykmoZ";
-const PH_HOST = "https://us.i.posthog.com";
+// Our reverse proxy to PostHog Cloud (see content.js PH_HOST comment)
+const PH_HOST = "https://posthog.fhijazi.com";
 
 let phStarted = false;
 if (PH_KEY && typeof posthog !== "undefined") {
@@ -163,7 +163,10 @@ document.getElementById("resetMenu").addEventListener("click", () => {
 });
 
 chrome.storage.sync.get(DEFAULTS, (settings) => {
-  document.getElementById("ccRow").hidden = !CC_ENABLED; // personal feature; hidden in the published build
+  // personal feature; the row stays hidden unless the cc-launcher flag is on
+  chrome.storage.local.get("bceCcFlags", (st) => {
+    document.getElementById("ccRow").hidden = !(st && st.bceCcFlags && st.bceCcFlags.launcher);
+  });
   for (const key of TOGGLES) document.getElementById(key).checked = settings[key];
   document.getElementById("bcFont").value = settings.bcFont ?? "plex";
   const emojis = settings.reactionEmojis || DEFAULT_EMOJIS;
