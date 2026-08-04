@@ -38,8 +38,8 @@ const TOGGLES = ["timeLabels", "rtl", "inlineReactions", "inlineMenus", "ccLaunc
 // from the bceWho cache content.js maintains (Basecamp email/person id).
 // Keep PH_KEY/PH_HOST in sync with content.js; empty key = no telemetry.
 const PH_KEY = "phc_zNZ5vwprEnyTuy5wGYf9WgutaV4GZZaBmp9tubfykmoZ";
-// Direct to US Cloud (see content.js PH_HOST comment re: the parked proxy)
-const PH_HOST = "https://us.i.posthog.com";
+// Our reverse proxy to PostHog Cloud (see content.js PH_HOST comment)
+const PH_HOST = "https://posthog.fhijazi.com";
 
 let phStarted = false;
 if (PH_KEY && typeof posthog !== "undefined") {

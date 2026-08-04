@@ -51,3 +51,11 @@ User call: skip the proxy for now. v1.19.1 reverts `PH_HOST` to
 through a home server made the cc-launcher gate depend on ftower uptime.
 The ftower proxy stays deployed and healthy as a ready cutover path
 (flip PH_HOST back to posthog.fhijazi.com when self-hosting).
+
+## Addendum 2: proxy LIVE after all (v1.19.2)
+
+User: "ftower is always up — bring it back." PH_HOST is back on
+https://posthog.fhijazi.com (+ ui_host us.posthog.com); capture re-verified
+through the domain ({"status":"Ok"}). The ftower compose/posthog/CLAUDE.md
+now marks the proxy as production infra: if it's down, telemetry stalls and
+flags stop refreshing (cached flag state keeps the launcher working).
