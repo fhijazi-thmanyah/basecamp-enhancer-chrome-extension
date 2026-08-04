@@ -43,3 +43,11 @@ installed extensions never notice. See the ftower-side
 - First-ever run on a new profile: launcher appears only after
   identify → flags round-trip (person email must match) — seconds, once.
 - Do NOT re-add compile-time gates; the flags are the mechanism now.
+
+## Addendum (same day): proxy PARKED, not live
+
+User call: skip the proxy for now. v1.19.1 reverts `PH_HOST` to
+`https://us.i.posthog.com` directly — routing telemetry + flag delivery
+through a home server made the cc-launcher gate depend on ftower uptime.
+The ftower proxy stays deployed and healthy as a ready cutover path
+(flip PH_HOST back to posthog.fhijazi.com when self-hosting).

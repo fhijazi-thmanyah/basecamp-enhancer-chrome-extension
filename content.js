@@ -80,11 +80,11 @@
   // initializes at all). Keep PH_KEY in sync with popup.js, which loads the
   // same vendor file for its own events.
   const PH_KEY = "phc_zNZ5vwprEnyTuy5wGYf9WgutaV4GZZaBmp9tubfykmoZ";
-  // Our own domain, reverse-proxying to PostHog US Cloud (ftower
-  // compose/posthog). Owning the endpoint means a later self-host is a proxy
-  // retarget — no extension update. PH_UI stays the Cloud UI for links.
-  const PH_HOST = "https://posthog.fhijazi.com";
-  const PH_UI = "https://us.posthog.com";
+  // Direct to PostHog US Cloud. A ready-made reverse proxy exists at
+  // https://posthog.fhijazi.com (ftower ~/media-server/compose/posthog/) for a
+  // future self-host cutover — deliberately NOT used yet: it would make
+  // telemetry AND cc-launcher flag delivery depend on the home server.
+  const PH_HOST = "https://us.i.posthog.com";
 
   let phStarted = false;
 
@@ -96,7 +96,6 @@
       phStarted = true;
       posthog.init(PH_KEY, {
         api_host: PH_HOST,
-        ui_host: PH_UI, // api_host is our proxy; toolbar/links belong to Cloud
         defaults: "2026-05-30", // versioned SDK defaults (per PostHog's snippet)
         persistence: "localStorage", // page localStorage; no cookies
         capture_pageview: "history_change", // initial + Turbo pushState navigations
