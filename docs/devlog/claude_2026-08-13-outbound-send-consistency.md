@@ -104,6 +104,41 @@ Net ≈ **−10 lines**, not the ~−40 first estimated: the duplication was *se
 (eight statements of one rule) rather than bulky prose. The line saving is small;
 removing five places that can independently drift is the actual win.
 
+## Handoff — state as of 2026-08-16
+
+**Shipped and pushed.**
+- `basecamp-enhancer` — `be76190` (v1.21.0, bundled with another session's popup/perf
+  work) + `dccce7b` (length rule). Pushed to `fhijazi-thmanyah/basecamp-enhancer-chrome-extension`.
+- `career-coach` — `c7e9b08`. Pushed to `FarisHijazi/basecamp-coach`.
+- Regression test added: `tests/ccprompt_test.mjs` (verified it fails on a reintroduced
+  `/basecamp`). Run after ANY `ccPrompt` edit.
+
+**Working, verified:** all four checkbox combinations of the launcher prompt; disclaimer
+applied once and idempotent on re-application; `--no-disclaimer` suppresses it;
+`basecamp_send("chat", …)` builds the right argv; no restatement of the sending rules
+survives outside the canonical `basecamp-cli/SKILL.md` → "Sending"; every `@`-pointer to
+it resolves; `py_compile` + JS parse clean on all touched files.
+
+**NOT verified — the honest gap:**
+- **`bc_send.py chat` has still never posted to the real API.** It is flag-correct per
+  `basecamp chat post --help` and unit-tested for command shape only. The first ping
+  reply through it will be its first live run — expect to debug that, not to trust it.
+- No test worker was spawned; nothing was posted to Basecamp end-to-end. The soft gate
+  ("Reply when done" off ⇒ worker doesn't post) has **never been observed working** — it
+  is reasoned about, not demonstrated. That is the single most valuable next test:
+  launch a worker on a real ping with the box unchecked and confirm silence.
+
+**Open / deliberately not done:**
+- The disclosure checkbox survives by Faris's explicit call. Dropping it remains the
+  single biggest available simplification (a UI row, a prompt branch, a CLI flag and a
+  code path, to express "post as a bot without admitting it").
+- Gates are SOFT by decision. A worker with `--dangerously-skip-permissions` can still
+  bypass them; what was removed is every *sanctioned* path. If a bypass happens again,
+  the fix is not more prompt text — it is the hard gate that was scoped and rejected
+  (cc-tmux-api env passthrough + a per-session policy + a PreToolUse hook).
+- `career-coach` was 6 commits ahead of origin from OTHER sessions at handoff time —
+  not mine, not pushed by me.
+
 ## Note for Faris
 
 `config/autosend.json` is currently **`{"enabled": true}`** — autosend is LIVE, and as

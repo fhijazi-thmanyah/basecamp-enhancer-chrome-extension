@@ -62,6 +62,12 @@ Content script (`content.js`, one IIFE) + background service worker (`background
 
 ## Testing
 
+`node tests/ccprompt_test.mjs` — no deps, exits non-zero on failure. Asserts the launcher
+prompt's invariants (explicit prohibition when "Reply when done" is off, disclosure stated
+only as a deviation, `/bc-thread` not `/basecamp`, `CC_DISCLOSE_PREFIX` unchanged, the
+length rule present). **Run it after any `ccPrompt` edit** — that prompt caused workers to
+post with the box unchecked twice, both times through wording no reviewer caught by eye.
+
 The **thmanyah** Chrome profile (`chrome-profiles.json` → deviceId `d78ac67f…`) is signed into Basecamp — use it via `/chrome` for live testing. Reactions were verified end-to-end on a real card (`.../cards/10063474912`) and ping (`.../circles/46769252`): bars inject into every `.boosts`, a delegated click POSTs a boost (200) and renders it inline, then the test boost is DELETEd (`DELETE /<acct>/buckets/<bucket>/boosts/<id>` with `X-CSRF-Token`) to leave no trace — **always clean up test boosts**, they notify subscribers. Time-label/RTL logic is also verifiable by injecting `content.js` against synthetic markup (single badge after double-run, correct relative text, `dir=auto` → rtl/ltr). The `javascript_tool` REPL mangles top-level `await` — stash results on a `window.__x` global in one call and read them back in the next.
 
 Reloading the unpacked extension to pick up edits requires `chrome://extensions` (the Chrome MCP can't script `chrome://`) — ask Faris to hit **reload**, or inject a page-context replica to verify logic live.
