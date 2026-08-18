@@ -48,7 +48,7 @@ Privacy policy: https://github.com/fhijazi-thmanyah/basecamp-enhancer-chrome-ext
 | Asset | Requirement | Status |
 |---|---|---|
 | Store icon | 128×128 PNG | `icons/icon128.png` |
-| Screenshots | 1280×800 (or 640×400) PNG/JPEG, 1–5, **at least one required** | see `docs/store-assets/` — regenerate before each listing edit |
+| Screenshots | 1280×800 (or 640×400), JPEG or **24-bit PNG with no alpha**, 1–5, **at least one required** | `docs/store-assets/screenshot-1-settings.png` + `screenshot-2-customize.png`, both 1280×800 TrueColor 8-bit. Regenerate with `./scripts/screenshot-popup.sh` (it fails rather than emit a wrong size or an alpha channel). |
 | Small promo tile | 440×280, optional (unlisted items don't need it) | not provided |
 
 The animated GIFs in `docs/media/` are README material, **not** store assets: the
