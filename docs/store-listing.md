@@ -65,17 +65,26 @@ message content. Never upload a screenshot with real Basecamp content in it.
 Basecamp Enhancer has one purpose: improving the usability of the Basecamp web app for the signed-in user. Every feature is a UI enhancement rendered on top of Basecamp pages — relative-time labels, right-to-left layout for Arabic, quick emoji reactions, a hover action bar that reuses Basecamp's own action menu, and a font picker. The extension runs only on Basecamp domains and does nothing on any other site.
 ```
 
-**Permission justifications** (one field per permission):
+**Permission justifications** (one field each; paste verbatim):
 
-| Permission | Justification to paste |
-|---|---|
-| `storage` | "Stores the user's own settings: which of the six features are enabled, the chosen font, their emoji set and its order, and which action-menu items to show. Nothing else is stored, and none of it leaves the browser (Chrome syncs it to the user's own account)." |
-| Host access to `app.basecamp.com` / `3.basecamp.com` | "This is where the extension does its work. The content script needs to read the page's timestamps and text to add relative-time labels and decide text direction, insert the reaction and action bars into Basecamp's own message elements, and post a reaction back to Basecamp's own boost endpoint on the user's behalf when they click an emoji." |
-| Host access to `http://127.0.0.1:8377/*`, `http://localhost:8377/*` | "For an optional companion feature that is disabled by default and hidden for almost all users: it talks to a small server the user installs and runs on their own computer to start a local automation agent for the Basecamp conversation they are reading. The requests never leave the user's machine, and the extension's own service worker is the only thing that makes them (the local server has no authentication, so it must not be reachable from web page code)." |
+`storage`
+```
+Stores the user's own settings so they persist between sessions and across their devices: which of the six features are enabled, the selected font, their chosen reaction emoji and the order these render in, and which action-menu items to show and in what order. It also caches the user's feature-flag values so the popup renders correctly on open. Nothing else is stored and none of it is transmitted to the developer — Chrome syncs it to the user's own account.
+```
 
-**Remote code:** No, the extension does not use remote code. All JavaScript,
-including the bundled analytics library at `vendor/posthog.js`, ships inside the
-package.
+Host permissions (one field covers all of them)
+```
+app.basecamp.com and 3.basecamp.com: this is where the extension does its work. The content script reads the page's timestamps to append relative-time labels, reads paragraph text to decide whether it should be laid out right-to-left, inserts the reaction and action bars into Basecamp's own message elements, and — when the user clicks an emoji — posts that reaction to Basecamp's own endpoint on the user's behalf.
+
+http://127.0.0.1:8377 and http://localhost:8377: for an optional companion feature that is off by default and hidden unless enabled for the account. It talks to a small server the user installs and runs on their own computer to start a local automation agent for the Basecamp conversation they are reading. These requests never leave the user's machine, and only the extension's service worker makes them — the local server has no authentication, so it must not be reachable from web page code.
+```
+
+**Remote code:** answer **"No, I am not using remote code"** — the dashboard still
+requires a justification:
+
+```
+No remote code is used. All JavaScript, CSS and fonts the extension executes or loads ship inside the package. The bundled analytics library (vendor/posthog.js) is deliberately the "no-external" build, which inlines every dependency and never fetches additional scripts at runtime.
+```
 
 **Data usage — check these boxes** (all of them apply only while the user leaves
 the "Usage analytics" toggle on; it is one click to turn off):
