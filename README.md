@@ -31,7 +31,7 @@
 
 اضغط أيقونة الإضافة في شريط كروم: كل ميزة لها مفتاح مستقل، والتغييرات تنطبق **فورًا** على تبويبات Basecamp المفتوحة بدون إعادة تحميل. أطفئ كل المفاتيح = يرجع Basecamp عادي تمامًا.
 
-> **الخصوصية:** الإضافة قد ترسل إحصاءات استخدام، وتقارير أخطاء، **وتسجيلات لجلسات التصفح داخل Basecamp** (مربوطة ببريدك في Basecamp) لمطوّر الإضافة عبر PostHog، عشان نعرف متى تصير مشاكل ونصلّحها. تقدر تطفيها في أي وقت من مفتاح **Usage analytics** في الإعدادات.
+> **الخصوصية:** الإضافة قد ترسل إحصاءات استخدام، وتقارير أخطاء، **وتسجيلات لجلسات التصفح داخل Basecamp** (مربوطة ببريدك في Basecamp) لمطوّر الإضافة عبر PostHog، عشان نعرف متى تصير مشاكل ونصلّحها. تقدر تطفيها في أي وقت من مفتاح **Usage analytics** في الإعدادات. التفاصيل الكاملة في [سياسة الخصوصية](docs/PRIVACY.md).
 
 > **ملاحظة:** فيه ميزة تجريبية إضافية (Claude Code launcher — تشغّل وكيل Claude على المحادثة) لكنها **مطفأة ومخفية** في النسخة المنشورة لأنها تحتاج خادم محلي. تفاصيل تشغيلها تحت.
 
@@ -52,3 +52,15 @@ Only needed if the `cc-launcher` PostHog feature flag is enabled for your accoun
    ```
 
 If the extension can't reach the backend, the launch popover shows this same command inline.
+
+## Releasing to the Chrome Web Store
+
+```bash
+./scripts/build.sh          # validates, then writes dist/basecamp-enhancer-<version>.zip
+./scripts/build.sh --check  # validate only
+```
+
+Bump `version` in `manifest.json` first — the store rejects a duplicate version.
+Everything the dashboard asks for (listing copy, permission justifications, data
+disclosures) is in [docs/store-listing.md](docs/store-listing.md); the policy the
+listing links to is [docs/PRIVACY.md](docs/PRIVACY.md).

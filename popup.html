@@ -30,6 +30,10 @@
         padding: 6px 12px;
         border-top: 1px solid #eee;
       }
+      /* `hidden` must win over `.row { display: flex }` — the flag-gated
+         Claude Code row is hidden with the attribute, and a display rule
+         on the same element silently beats the UA sheet. */
+      [hidden] { display: none !important; }
       .label { flex: 1; min-width: 0; }
       /* descriptions wrap rather than truncate — a clipped privacy line would
          be worse than an extra row of text */

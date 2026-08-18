@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Basecamp Enhancer",
-  "version": "1.21.0",
-  "description": "Basecamp quality-of-life: relative timestamps, an RTL fix, and a Google-Chat–style hover bar with one-click emoji reactions plus the full action menu. Toggle each from the toolbar.",
+  "version": "1.21.1",
+  "description": "Quality-of-life for Basecamp: relative timestamps, an Arabic RTL fix, one-click emoji reactions and a hover action bar.",
   "permissions": [
     "storage"
   ],
