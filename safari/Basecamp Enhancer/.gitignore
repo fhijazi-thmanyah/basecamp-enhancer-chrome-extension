@@ -1,7 +1,2 @@
-*.zip
-.DS_Store
-.vscode/
-.cc-convos/
-dist/
 safari/Basecamp Enhancer/build/
 xcuserdata/

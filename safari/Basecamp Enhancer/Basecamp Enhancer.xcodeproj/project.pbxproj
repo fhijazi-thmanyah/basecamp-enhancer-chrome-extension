@@ -1,0 +1,629 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		232088943035F32900C85138 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 232088933035F32900C85138 /* AppDelegate.swift */; };
+		232088983035F32900C85138 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 232088963035F32900C85138 /* Main.html */; };
+		2320889A3035F32900C85138 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 232088993035F32900C85138 /* Icon.png */; };
+		2320889C3035F32900C85138 /* Style.css in Resources */ = {isa = PBXBuildFile; fileRef = 2320889B3035F32900C85138 /* Style.css */; };
+		2320889E3035F32900C85138 /* Script.js in Resources */ = {isa = PBXBuildFile; fileRef = 2320889D3035F32900C85138 /* Script.js */; };
+		232088A03035F32900C85138 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2320889F3035F32900C85138 /* ViewController.swift */; };
+		232088A33035F32900C85138 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 232088A13035F32900C85138 /* Main.storyboard */; };
+		232088A53035F32B00C85138 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 232088A43035F32B00C85138 /* Assets.xcassets */; };
+		232088AC3035F32B00C85138 /* Basecamp Enhancer Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 232088AB3035F32B00C85138 /* Basecamp Enhancer Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		232088B13035F32B00C85138 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 232088B03035F32B00C85138 /* SafariWebExtensionHandler.swift */; };
+		232088C63035F32B00C85138 /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = 232088BD3035F32B00C85138 /* popup.js */; };
+		232088C73035F32B00C85138 /* styles.css in Resources */ = {isa = PBXBuildFile; fileRef = 232088BE3035F32B00C85138 /* styles.css */; };
+		232088C83035F32B00C85138 /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 232088BF3035F32B00C85138 /* background.js */; };
+		232088C93035F32B00C85138 /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = 232088C03035F32B00C85138 /* popup.html */; };
+		232088CA3035F32B00C85138 /* icons in Resources */ = {isa = PBXBuildFile; fileRef = 232088C13035F32B00C85138 /* icons */; };
+		232088CB3035F32B00C85138 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 232088C23035F32B00C85138 /* manifest.json */; };
+		232088CC3035F32B00C85138 /* content.js in Resources */ = {isa = PBXBuildFile; fileRef = 232088C33035F32B00C85138 /* content.js */; };
+		232088CD3035F32B00C85138 /* fonts in Resources */ = {isa = PBXBuildFile; fileRef = 232088C43035F32B00C85138 /* fonts */; };
+		232088CE3035F32B00C85138 /* vendor in Resources */ = {isa = PBXBuildFile; fileRef = 232088C53035F32B00C85138 /* vendor */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		232088AD3035F32B00C85138 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 232088883035F32900C85138 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 232088AA3035F32B00C85138;
+			remoteInfo = "Basecamp Enhancer Extension";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		232088B83035F32B00C85138 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				232088AC3035F32B00C85138 /* Basecamp Enhancer Extension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		232088903035F32900C85138 /* Basecamp Enhancer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Basecamp Enhancer.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		232088933035F32900C85138 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		232088973035F32900C85138 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = Base.lproj/Main.html; sourceTree = "<group>"; };
+		232088993035F32900C85138 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
+		2320889B3035F32900C85138 /* Style.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = Style.css; sourceTree = "<group>"; };
+		2320889D3035F32900C85138 /* Script.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = Script.js; sourceTree = "<group>"; };
+		2320889F3035F32900C85138 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		232088A23035F32900C85138 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		232088A43035F32B00C85138 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		232088A63035F32B00C85138 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		232088AB3035F32B00C85138 /* Basecamp Enhancer Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Basecamp Enhancer Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		232088B03035F32B00C85138 /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
+		232088B23035F32B00C85138 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		232088BD3035F32B00C85138 /* popup.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = popup.js; path = Resources/popup.js; sourceTree = "<group>"; };
+		232088BE3035F32B00C85138 /* styles.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; name = styles.css; path = Resources/styles.css; sourceTree = "<group>"; };
+		232088BF3035F32B00C85138 /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = background.js; path = Resources/background.js; sourceTree = "<group>"; };
+		232088C03035F32B00C85138 /* popup.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = popup.html; path = Resources/popup.html; sourceTree = "<group>"; };
+		232088C13035F32B00C85138 /* icons */ = {isa = PBXFileReference; lastKnownFileType = folder; name = icons; path = Resources/icons; sourceTree = "<group>"; };
+		232088C23035F32B00C85138 /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = Resources/manifest.json; sourceTree = "<group>"; };
+		232088C33035F32B00C85138 /* content.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = content.js; path = Resources/content.js; sourceTree = "<group>"; };
+		232088C43035F32B00C85138 /* fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = fonts; path = Resources/fonts; sourceTree = "<group>"; };
+		232088C53035F32B00C85138 /* vendor */ = {isa = PBXFileReference; lastKnownFileType = folder; name = vendor; path = Resources/vendor; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		2320888D3035F32900C85138 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		232088A83035F32B00C85138 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		232088873035F32900C85138 = {
+			isa = PBXGroup;
+			children = (
+				232088923035F32900C85138 /* Basecamp Enhancer */,
+				232088AF3035F32B00C85138 /* Basecamp Enhancer Extension */,
+				232088913035F32900C85138 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		232088913035F32900C85138 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				232088903035F32900C85138 /* Basecamp Enhancer.app */,
+				232088AB3035F32B00C85138 /* Basecamp Enhancer Extension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		232088923035F32900C85138 /* Basecamp Enhancer */ = {
+			isa = PBXGroup;
+			children = (
+				232088933035F32900C85138 /* AppDelegate.swift */,
+				2320889F3035F32900C85138 /* ViewController.swift */,
+				232088A13035F32900C85138 /* Main.storyboard */,
+				232088A43035F32B00C85138 /* Assets.xcassets */,
+				232088A63035F32B00C85138 /* Info.plist */,
+				232088953035F32900C85138 /* Resources */,
+			);
+			path = "Basecamp Enhancer";
+			sourceTree = "<group>";
+		};
+		232088953035F32900C85138 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				232088963035F32900C85138 /* Main.html */,
+				232088993035F32900C85138 /* Icon.png */,
+				2320889B3035F32900C85138 /* Style.css */,
+				2320889D3035F32900C85138 /* Script.js */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		232088AF3035F32B00C85138 /* Basecamp Enhancer Extension */ = {
+			isa = PBXGroup;
+			children = (
+				232088BC3035F32B00C85138 /* Resources */,
+				232088B03035F32B00C85138 /* SafariWebExtensionHandler.swift */,
+				232088B23035F32B00C85138 /* Info.plist */,
+			);
+			path = "Basecamp Enhancer Extension";
+			sourceTree = "<group>";
+		};
+		232088BC3035F32B00C85138 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				232088BD3035F32B00C85138 /* popup.js */,
+				232088BE3035F32B00C85138 /* styles.css */,
+				232088BF3035F32B00C85138 /* background.js */,
+				232088C03035F32B00C85138 /* popup.html */,
+				232088C13035F32B00C85138 /* icons */,
+				232088C23035F32B00C85138 /* manifest.json */,
+				232088C33035F32B00C85138 /* content.js */,
+				232088C43035F32B00C85138 /* fonts */,
+				232088C53035F32B00C85138 /* vendor */,
+			);
+			name = Resources;
+			path = "Basecamp Enhancer Extension";
+			sourceTree = SOURCE_ROOT;
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		2320888F3035F32900C85138 /* Basecamp Enhancer */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 232088B93035F32B00C85138 /* Build configuration list for PBXNativeTarget "Basecamp Enhancer" */;
+			buildPhases = (
+				2320888C3035F32900C85138 /* Sources */,
+				2320888D3035F32900C85138 /* Frameworks */,
+				2320888E3035F32900C85138 /* Resources */,
+				232088B83035F32B00C85138 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				232088AE3035F32B00C85138 /* PBXTargetDependency */,
+			);
+			name = "Basecamp Enhancer";
+			packageProductDependencies = (
+			);
+			productName = "Basecamp Enhancer";
+			productReference = 232088903035F32900C85138 /* Basecamp Enhancer.app */;
+			productType = "com.apple.product-type.application";
+		};
+		232088AA3035F32B00C85138 /* Basecamp Enhancer Extension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 232088B53035F32B00C85138 /* Build configuration list for PBXNativeTarget "Basecamp Enhancer Extension" */;
+			buildPhases = (
+				232088A73035F32B00C85138 /* Sources */,
+				232088A83035F32B00C85138 /* Frameworks */,
+				232088A93035F32B00C85138 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Basecamp Enhancer Extension";
+			packageProductDependencies = (
+			);
+			productName = "Basecamp Enhancer Extension";
+			productReference = 232088AB3035F32B00C85138 /* Basecamp Enhancer Extension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		232088883035F32900C85138 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2640;
+				LastUpgradeCheck = 2640;
+				TargetAttributes = {
+					2320888F3035F32900C85138 = {
+						CreatedOnToolsVersion = 26.4;
+					};
+					232088AA3035F32B00C85138 = {
+						CreatedOnToolsVersion = 26.4;
+					};
+				};
+			};
+			buildConfigurationList = 2320888B3035F32900C85138 /* Build configuration list for PBXProject "Basecamp Enhancer" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 232088873035F32900C85138;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 232088913035F32900C85138 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				2320888F3035F32900C85138 /* Basecamp Enhancer */,
+				232088AA3035F32B00C85138 /* Basecamp Enhancer Extension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		2320888E3035F32900C85138 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2320889A3035F32900C85138 /* Icon.png in Resources */,
+				232088A33035F32900C85138 /* Main.storyboard in Resources */,
+				2320889E3035F32900C85138 /* Script.js in Resources */,
+				232088983035F32900C85138 /* Main.html in Resources */,
+				232088A53035F32B00C85138 /* Assets.xcassets in Resources */,
+				2320889C3035F32900C85138 /* Style.css in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		232088A93035F32B00C85138 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				232088CE3035F32B00C85138 /* vendor in Resources */,
+				232088C63035F32B00C85138 /* popup.js in Resources */,
+				232088C93035F32B00C85138 /* popup.html in Resources */,
+				232088C83035F32B00C85138 /* background.js in Resources */,
+				232088CA3035F32B00C85138 /* icons in Resources */,
+				232088CB3035F32B00C85138 /* manifest.json in Resources */,
+				232088CC3035F32B00C85138 /* content.js in Resources */,
+				232088C73035F32B00C85138 /* styles.css in Resources */,
+				232088CD3035F32B00C85138 /* fonts in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2320888C3035F32900C85138 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				232088A03035F32900C85138 /* ViewController.swift in Sources */,
+				232088943035F32900C85138 /* AppDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		232088A73035F32B00C85138 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				232088B13035F32B00C85138 /* SafariWebExtensionHandler.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		232088AE3035F32B00C85138 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 232088AA3035F32B00C85138 /* Basecamp Enhancer Extension */;
+			targetProxy = 232088AD3035F32B00C85138 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		232088963035F32900C85138 /* Main.html */ = {
+			isa = PBXVariantGroup;
+			children = (
+				232088973035F32900C85138 /* Base */,
+			);
+			name = Main.html;
+			sourceTree = "<group>";
+		};
+		232088A13035F32900C85138 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				232088A23035F32900C85138 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		232088B33035F32B00C85138 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.3;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		232088B43035F32B00C85138 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.3;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		232088B63035F32B00C85138 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Basecamp Enhancer Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Basecamp Enhancer Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.farishijazi.basecamp-enhancer.Extension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		232088B73035F32B00C85138 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Basecamp Enhancer Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Basecamp Enhancer Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.farishijazi.basecamp-enhancer.Extension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		232088BA3035F32B00C85138 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Basecamp Enhancer/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Basecamp Enhancer";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.farishijazi.basecamp-enhancer";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		232088BB3035F32B00C85138 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Basecamp Enhancer/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Basecamp Enhancer";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.farishijazi.basecamp-enhancer";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2320888B3035F32900C85138 /* Build configuration list for PBXProject "Basecamp Enhancer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				232088B33035F32B00C85138 /* Debug */,
+				232088B43035F32B00C85138 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		232088B53035F32B00C85138 /* Build configuration list for PBXNativeTarget "Basecamp Enhancer Extension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				232088B63035F32B00C85138 /* Debug */,
+				232088B73035F32B00C85138 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		232088B93035F32B00C85138 /* Build configuration list for PBXNativeTarget "Basecamp Enhancer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				232088BA3035F32B00C85138 /* Debug */,
+				232088BB3035F32B00C85138 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 232088883035F32900C85138 /* Project object */;
+}

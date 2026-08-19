@@ -135,3 +135,47 @@ Things a reviewer is most likely to question, and the honest answer:
 3. Upload the zip → Package tab; update the listing/privacy fields above only if they changed.
 4. Submit for review. Unlisted items still go through review; expect same-day to a few days.
 5. Tag the release: `git tag v<version> && git push --tags`.
+
+---
+
+## 6. Published item record (fill in — do not lose)
+
+Accepted and live on the Chrome Web Store **2026-08-19** (submission was v1.21.1,
+Unlisted). Facts worth recording so nothing about the listing is ever lost:
+
+| Field | Value |
+|---|---|
+| Item ID (32 chars, from the devconsole URL) | **TODO — paste from dashboard** |
+| Unlisted install link (`https://chromewebstore.google.com/detail/<item-id>`) | **TODO** |
+| Publisher Google account | **TODO — the account signed into the devconsole** |
+| First published version | 1.21.1 |
+
+**There is no local signing key to back up.** The extension was uploaded as a ZIP,
+so Google generated and holds the CRX signing key; the item ID and publisher
+account ARE the keys to the listing. Losing access to the publisher Google account
+is the only way to lose the extension — record which account it is, and keep 2FA
+recovery for it current.
+
+Optional but useful once the item ID is known: fetch the published CRX
+(`https://clients2.google.com/service/update2/crx?response=redirect&prodversion=138.0&acceptformat=crx3&x=id%3D<ITEM_ID>%26uc`),
+extract the `"key"` from its manifest, and paste it into a dev copy of
+`manifest.json` to pin unpacked builds to the same extension ID as the store build.
+
+## 7. Safari
+
+The Safari port lives in `safari/` — an Xcode project generated with
+`xcrun safari-web-extension-converter` that wraps the **same runtime files**
+(`safari/Basecamp Enhancer/Basecamp Enhancer Extension/Resources/` is a copy,
+refreshed only by `./scripts/build-safari.sh`). Bundle IDs:
+`com.farishijazi.basecamp-enhancer` (app) / `….Extension` (appex);
+deployment target macOS 13.3 (Safari 16.4, the MV3 service-worker floor).
+
+- **Local / unsigned use:** `./scripts/build-safari.sh` builds an ad-hoc-signed
+  app; launch it once, then in Safari enable Develop → Developer →
+  *Allow unsigned extensions* and switch the extension on under
+  Settings → Extensions. The "Allow unsigned" flag resets every Safari launch.
+- **Distribution:** requires a paid Apple Developer Program membership
+  ($99/yr). Two routes: Mac App Store (archive + upload in Xcode, App Review),
+  or Developer ID + notarization for direct download (no store review).
+  Either way, set a real `DEVELOPMENT_TEAM` in the Xcode project first.
+- Record here once it exists: Apple Developer account, App Store Connect app ID.

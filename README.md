@@ -53,6 +53,23 @@ Only needed if the `cc-launcher` PostHog feature flag is enabled for your accoun
 
 If the extension can't reach the backend, the launch popover shows this same command inline.
 
+## Safari
+
+The Safari port wraps the exact same extension files in an Xcode project
+(`safari/`, generated with `xcrun safari-web-extension-converter`; macOS 13.3+).
+
+```bash
+./scripts/build-safari.sh   # validates, syncs runtime files into the Xcode project, ad-hoc build
+open "safari/Basecamp Enhancer/build/Build/Products/Release/Basecamp Enhancer.app"
+```
+
+Then in Safari: enable the Develop menu (Settings → Advanced), Develop →
+Developer → **Allow unsigned extensions** (this resets every Safari launch),
+and switch **Basecamp Enhancer** on under Settings → Extensions. Distributing
+without that flag requires archiving in Xcode with a paid Apple Developer team
+(App Store or notarized direct download) — see
+[docs/store-listing.md](docs/store-listing.md) → Safari.
+
 ## Releasing to the Chrome Web Store
 
 ```bash

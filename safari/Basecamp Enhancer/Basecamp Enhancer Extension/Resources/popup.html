@@ -1,0 +1,192 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        margin: 0;
+        width: 300px;
+        font: 12px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #1c1c1c;
+        background: #fff;
+      }
+      @media (prefers-color-scheme: dark) {
+        body { color: #eee; background: #242424; }
+        .row, .subrow { border-color: #3a3a3a; }
+        #reactionEmojis { background: #1c1c1c; color: #eee; border-color: #3a3a3a; }
+      }
+      header {
+        padding: 8px 12px 6px;
+        font-weight: 600;
+        font-size: 12px;
+        letter-spacing: 0.02em;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 6px 12px;
+        border-top: 1px solid #eee;
+      }
+      /* `hidden` must win over `.row { display: flex }` — the flag-gated
+         Claude Code row is hidden with the attribute, and a display rule
+         on the same element silently beats the UA sheet. */
+      [hidden] { display: none !important; }
+      .label { flex: 1; min-width: 0; }
+      /* descriptions wrap rather than truncate — a clipped privacy line would
+         be worse than an extra row of text */
+      .label small { display: block; opacity: 0.55; font-weight: 400; font-size: 10.5px; }
+
+      /* tiny toggle switch */
+      .switch { position: relative; width: 30px; height: 17px; flex: none; }
+      .switch input { opacity: 0; width: 0; height: 0; }
+      .slider {
+        position: absolute; inset: 0; cursor: pointer;
+        background: #c8c8c8; border-radius: 20px; transition: 0.15s;
+      }
+      .slider::before {
+        content: ""; position: absolute; height: 13px; width: 13px;
+        left: 2px; top: 2px; background: #fff; border-radius: 50%; transition: 0.15s;
+      }
+      input:checked + .slider { background: #1f8f4e; }
+      input:checked + .slider::before { transform: translateX(13px); }
+
+      /* collapsible editors — closed by default so the popup stays short */
+      .subrow { padding: 0 12px 8px; border-top: 1px solid #eee; }
+      .subrow > summary {
+        list-style: none; cursor: pointer; padding: 6px 0;
+        opacity: 0.7; font-size: 11px;
+      }
+      .subrow > summary::-webkit-details-marker { display: none; }
+      .subrow > summary::before { content: "▸ "; display: inline-block; width: 10px; }
+      .subrow[open] > summary::before { content: "▾ "; }
+      #reactionEmojis {
+        width: 100%; box-sizing: border-box; padding: 6px 7px;
+        font: 16px/1.3 -apple-system, "Segoe UI Emoji", sans-serif;
+        letter-spacing: 2px; border: 1px solid #ddd; border-radius: 7px;
+        background: #fafafa; color: #1c1c1c;
+      }
+      .subrow__foot {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-top: 5px;
+      }
+      #reactCount { opacity: 0.55; }
+      #resetEmojis, #resetMenu {
+        background: none; border: none; padding: 0; cursor: pointer;
+        color: #1f6feb; font: inherit; font-size: 11px;
+      }
+      #resetEmojis:hover, #resetMenu:hover { text-decoration: underline; }
+      .disabled { opacity: 0.4; pointer-events: none; }
+
+      #bcFont {
+        max-width: 150px; font: inherit; font-size: 11px;
+        border: 1px solid #ddd; border-radius: 6px; padding: 2px 3px;
+        background: #fafafa; color: inherit;
+      }
+      @media (prefers-color-scheme: dark) {
+        #bcFont { background: #1c1c1c; border-color: #3a3a3a; }
+      }
+
+      /* menu-item editor: draggable rows (single column — drag order is vertical) */
+      #menuList { list-style: none; margin: 0; padding: 0; }
+      #menuList li {
+        display: flex; align-items: center; gap: 5px;
+        padding: 2px 3px; border-radius: 5px; cursor: grab;
+        min-width: 0;
+      }
+      #menuList li:hover { background: rgba(127, 127, 127, 0.12); }
+      #menuList li.dragging { opacity: 0.35; }
+      #menuList .grip { opacity: 0.4; font-size: 10px; cursor: grab; }
+      #menuList input { margin: 0; width: 12px; height: 12px; flex: none; }
+      #menuList .label {
+        flex: 1; min-width: 0;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+    </style>
+  </head>
+  <body>
+    <header>Basecamp Enhancer</header>
+
+    <label class="row" for="timeLabels">
+      <span class="label">Relative time labels<small>append “(X ago)” to dates</small></span>
+      <span class="switch">
+        <input type="checkbox" id="timeLabels" />
+        <span class="slider"></span>
+      </span>
+    </label>
+
+    <label class="row" for="rtl">
+      <span class="label">Force RTL<small>Arabic-majority text goes right-to-left</small></span>
+      <span class="switch">
+        <input type="checkbox" id="rtl" />
+        <span class="slider"></span>
+      </span>
+    </label>
+
+    <label class="row" for="bcFont">
+      <span class="label">Font<small>Thmanyah typefaces</small></span>
+      <select id="bcFont" title="swap Basecamp's font for a Thmanyah one">
+        <option value="">Basecamp original</option>
+        <option value="plex">Thmanyah web (Plex)</option>
+        <option value="sans">Thmanyah Sans</option>
+        <option value="seriftext">Serif Text</option>
+        <option value="serifdisplay">Serif Display</option>
+      </select>
+    </label>
+
+    <label class="row" for="inlineReactions">
+      <span class="label">Inline reactions<small>one-click emoji, no “…” menu</small></span>
+      <span class="switch">
+        <input type="checkbox" id="inlineReactions" />
+        <span class="slider"></span>
+      </span>
+    </label>
+
+    <label class="row" for="inlineMenus">
+      <span class="label">Inline message menu<small>Edit/Reply/Bookmark/… beside bubbles</small></span>
+      <span class="switch">
+        <input type="checkbox" id="inlineMenus" />
+        <span class="slider"></span>
+      </span>
+    </label>
+
+    <details class="subrow" id="menuEditor">
+      <summary>Menu items — drag to reorder, untick to hide</summary>
+      <ul id="menuList"></ul>
+      <div class="subrow__foot">
+        <span></span>
+        <button type="button" id="resetMenu">Reset to defaults</button>
+      </div>
+    </details>
+
+    <details class="subrow" id="emojiEditor">
+      <summary>Reaction emoji — edit the set &amp; order</summary>
+      <input type="text" id="reactionEmojis" spellcheck="false" autocomplete="off" />
+      <div class="subrow__foot">
+        <span id="reactCount"></span>
+        <button type="button" id="resetEmojis">Reset to defaults</button>
+      </div>
+    </details>
+
+    <label class="row" for="ccLaunch" id="ccRow" hidden>
+      <span class="label">Claude Code launcher<small>spawn a Claude worker on this convo</small></span>
+      <span class="switch">
+        <input type="checkbox" id="ccLaunch" />
+        <span class="slider"></span>
+      </span>
+    </label>
+
+    <label class="row" for="telemetry">
+      <span class="label">Usage analytics<small>visits, clicks, session replays &amp; errors — tied to your email</small></span>
+      <span class="switch">
+        <input type="checkbox" id="telemetry" />
+        <span class="slider"></span>
+      </span>
+    </label>
+
+    <script src="vendor/posthog.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>
