@@ -24,12 +24,13 @@ const DEFAULTS = {
   inlineReactions: true,
   inlineMenus: true,
   bcFont: "plex", // "" = original | plex | sans | seriftext | serifdisplay (keep in sync with content.js)
+  fullWidth: false,
   ccLaunch: true,
   telemetry: true,
   reactionEmojis: DEFAULT_EMOJIS,
   menuItems: DEFAULT_MENU_ITEMS,
 };
-const TOGGLES = ["timeLabels", "rtl", "inlineReactions", "inlineMenus", "ccLaunch", "telemetry"];
+const TOGGLES = ["timeLabels", "rtl", "fullWidth", "inlineReactions", "inlineMenus", "ccLaunch", "telemetry"];
 
 // setting_changed telemetry. Sent from HERE because the popup is the single
 // writer of settings — every open tab hears storage.onChanged, so capturing

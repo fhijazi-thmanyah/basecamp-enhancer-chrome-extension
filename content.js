@@ -59,6 +59,7 @@
     // (thmanyah.com's typeface), "sans"/"seriftext"/"serifdisplay" = the
     // Thmanyah brand families. Values match styles.css [data-bce-font=…].
     bcFont: "plex",
+    fullWidth: false, // widen Basecamp's centered middle column to the full screen
     ccLaunch: true,
     telemetry: true,
     reactionEmojis: DEFAULT_EMOJIS,
@@ -1391,6 +1392,14 @@
   function applyFont() { ensureFontFaces(); document.documentElement.setAttribute("data-bce-font", settings.bcFont); }
   function removeFont() { document.documentElement.removeAttribute("data-bce-font"); }
 
+  // ---- Feature: full-width layout ---------------------------------------
+  // Basecamp centers its middle column with a max-width; styles.css lifts it
+  // under html[data-bce-wide]. Same attribute pattern as the font picker:
+  // setting/removing the attribute IS the whole apply/revert.
+
+  function applyFullWidth() { document.documentElement.setAttribute("data-bce-wide", ""); }
+  function removeFullWidth() { document.documentElement.removeAttribute("data-bce-wide"); }
+
   // ---- Wiring -----------------------------------------------------------
 
   // Our own injected DOM. Never re-enhance it: decorating a badge or a lifted
@@ -1462,6 +1471,7 @@
     if (settings.timeLabels) decorateAllTimes(); else removeTimeLabels();
     if (settings.rtl) applyAutoDir(); else removeAutoDir();
     if (settings.bcFont) applyFont(); else removeFont();
+    if (settings.fullWidth) applyFullWidth(); else removeFullWidth();
     if (settings.inlineReactions) applyInlineReactions(); else removeReactionBars();
     if (settings.inlineReactions || settings.inlineMenus) applyHoverBars(); else removeHoverBars();
     if (!settings.inlineMenus) removeHoverMenus();

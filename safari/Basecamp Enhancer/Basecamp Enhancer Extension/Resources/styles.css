@@ -442,6 +442,20 @@ form.bce-cc-beside > .relative { position: relative; }
 .bce-dark .bce-hoverbar .action-sheet__action:hover,
 .bce-dark .bce-react-btn:hover { background: rgba(255, 255, 255, 0.12) !important; }
 
+/* ---- Feature: full-width layout ----------------------------------------
+   content.js sets data-bce-wide on <html> (settings.fullWidth, default OFF).
+   Basecamp's centered middle column is `main.main-content.perma`, sized by
+   `.perma { inline-size: min(100% - var(--perma-page-margin)*2,
+   var(--perma-width)); margin-inline: auto }` with --perma-width: 1088px
+   (verified in the live desktop-*.css). Basecamp itself ships size
+   modifiers ending in `.perma--full { --perma-width: 100% }` — so widening
+   is exactly one variable override, riding their own sizing formula (no
+   max-width anywhere; don't add lifts for it). Chat/card-table views have
+   no such cap and are untouched. */
+html[data-bce-wide] .perma {
+  --perma-width: 100% !important;
+}
+
 /* ---- Feature: Thmanyah font --------------------------------------------
    A font PICKER, not a toggle: content.js sets data-bce-font="<choice>" on
    <html> (absent = original Basecamp). "plex" = IBM Plex Sans Arabic, the
