@@ -1,14 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Basecamp Enhancer",
-  "version": "1.22.0",
+  "version": "1.23.0",
   "description": "Quality-of-life for Basecamp: relative timestamps, an Arabic RTL fix, one-click emoji reactions and a hover action bar.",
   "permissions": [
     "storage"
   ],
   "host_permissions": [
     "http://127.0.0.1:8377/*",
-    "http://localhost:8377/*"
+    "http://localhost:8377/*",
+    "http://192.168.0.43:8377/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -57,5 +58,9 @@
       "run_at": "document_start",
       "all_frames": false
     }
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
   ]
 }

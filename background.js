@@ -6,15 +6,28 @@
 // Keeping every HQ call here is deliberate: HQ has no auth, so the extension
 // being the sole caller (never the page) is the security boundary.
 
-const HQ_BASE = "http://127.0.0.1:8377";
+const HQ_DEFAULT = "http://127.0.0.1:8377";
+
+// HQ may run locally or on the thmanyah-dev VM (reached over an ssh tunnel, or
+// directly at its LAN address). The base is user-configurable in the popup;
+// the default keeps the historical loopback behaviour.
+async function hqBase() {
+  try {
+    const { hqBase } = await chrome.storage.sync.get({ hqBase: HQ_DEFAULT });
+    return String(hqBase || HQ_DEFAULT).replace(/\/+$/, "");
+  } catch (e) {
+    return HQ_DEFAULT;
+  }
+}
 
 async function hqCall(path, init) {
+  const base = await hqBase();
   let res;
   try {
-    res = await fetch(HQ_BASE + path, init);
+    res = await fetch(base + path, init);
   } catch (e) {
     // TypeError: Failed to fetch => HQ not running / connection refused
-    return { ok: false, error: "HQ unreachable at 127.0.0.1:8377 — is it running?" };
+    return { ok: false, error: `HQ unreachable at ${base} — is it running?` };
   }
   const data = await res.json().catch(() => null);
   if (!res.ok) {

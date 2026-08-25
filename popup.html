@@ -196,5 +196,24 @@
 
     <script src="vendor/posthog.js"></script>
     <script src="popup.js"></script>
+      <div class="subrow__foot">
+        <label for="hqPick" style="display:block;margin-bottom:4px">HQ server</label>
+        <div style="display:flex;gap:4px;align-items:center">
+          <select id="hqPick"
+                  style="flex:1;min-width:0;font-family:monospace;font-size:12px"></select>
+          <button id="hqTest" type="button" title="Check whether this HQ answers"
+                  style="font-size:11px;white-space:nowrap">test</button>
+          <button id="hqDel" type="button" title="Forget this server"
+                  style="font-size:11px">&#10005;</button>
+        </div>
+        <div style="display:flex;gap:4px;margin-top:4px">
+          <input id="hqBase" type="text" spellcheck="false"
+                 placeholder="http://127.0.0.1:8377"
+                 style="flex:1;min-width:0;box-sizing:border-box;font-family:monospace;font-size:12px" />
+          <button id="hqAdd" type="button" title="Add this server and switch to it"
+                  style="font-size:11px;white-space:nowrap">add</button>
+        </div>
+        <div id="hqBaseNote" style="opacity:.7;font-size:11px;margin-top:3px"></div>
+      </div>
   </body>
 </html>

@@ -917,6 +917,20 @@
   };
   const sameConvo = (a, b) => convoKey(a) === convoKey(b);
 
+  // The HQ base the popup configured. background.js owns the same value for its
+  // own fetches; the tray needs it too, because the per-session "HQ" link is a
+  // plain <a href> the browser follows directly. It used to be hardcoded to
+  // http://127.0.0.1:8377, so pointing the extension at any other HQ left that
+  // link aiming at a server that was not the one being used.
+  const HQ_FALLBACK = "http://127.0.0.1:8377";
+  let hqBase = HQ_FALLBACK;
+  const hqUrl = (path) => hqBase.replace(/\/+$/, "") + path;
+  try {
+    chrome.storage.sync.get({ hqBase: HQ_FALLBACK }, (v) => {
+      hqBase = String(v.hqBase || HQ_FALLBACK);
+    });
+  } catch { /* orphaned context */ }
+
   // Launched-session tray, persisted so it survives navigations/reloads.
   function loadCcSessions() {
     return new Promise((r) => chrome.storage.local.get({ ccSessions: [] }, (v) => r(v.ccSessions)));
@@ -1161,6 +1175,15 @@
           name.href = s.web_url;
           name.target = "_blank";
           name.title = "Open this session in claude.ai Claude Code";
+        } else {
+          // No bridge (yet, or ever: /rc fails for HQ-spawned workers on the
+          // VM). A dead name with no href reads as "this worker is broken", so
+          // fall back to the HQ card, which always exists. pollTray upgrades
+          // this to the claude.ai URL the moment web_url appears.
+          name.href = hqUrl("/#w-" + encodeURIComponent(s.session));
+          name.target = "_blank";
+          name.dataset.fallback = "1";
+          name.title = "Open this worker in HQ (no claude.ai link yet: remote control has not connected)";
         }
         info.appendChild(name);
         info.appendChild(ccEl("small", null, s.title));
@@ -1168,7 +1191,7 @@
         if (ccFlags.hqLink) {
           // per-session HQ deep link → scrolls to & flashes THIS worker's card
           const hq = ccEl("a", "bce-cc-hq", "HQ ↗");
-          hq.href = "http://127.0.0.1:8377/#w-" + encodeURIComponent(s.session);
+          hq.href = hqUrl("/#w-" + encodeURIComponent(s.session));
           hq.target = "_blank";
           hq.title = "Open this session in the HQ dashboard";
           row.appendChild(hq);
@@ -1222,9 +1245,12 @@
         // once the worker's remote-control bridge connects, HQ exposes its
         // claude.ai URL — the session name becomes the link
         const name = row.querySelector(".bce-cc-name");
-        if (w && w.web_url && name && !name.href) {
+        // `!name.href` was the "not linked yet" test, but every row now starts
+        // with an HQ fallback href, so the real test is "still the fallback".
+        if (w && w.web_url && name && (!name.href || name.dataset.fallback)) {
           name.href = w.web_url;
           name.target = "_blank";
+          delete name.dataset.fallback;
           name.title = "Open this session in claude.ai Claude Code";
           // the claude.ai URL is immutable — persist it so future trays can
           // render the link without needing the backend up
@@ -1504,6 +1530,9 @@
   // (setting_changed telemetry is sent by popup.js — the single writer — not
   // here: every open tab hears onChanged, which would duplicate the event.)
   chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "sync" && changes.hqBase) {
+      hqBase = String(changes.hqBase.newValue || HQ_FALLBACK);
+    }
     if (area !== "sync") return;
     for (const key in changes) settings[key] = changes[key].newValue;
     reconcile();

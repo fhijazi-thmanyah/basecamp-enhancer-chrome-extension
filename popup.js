@@ -209,3 +209,120 @@ document.getElementById("resetEmojis").addEventListener("click", () => {
   showCount(DEFAULT_EMOJIS.length);
   chrome.storage.sync.set({ reactionEmojis: DEFAULT_EMOJIS });
 });
+
+
+// --- HQ servers --------------------------------------------------------
+// Several HQs exist in practice: a local one, the thmanyah VM over an ssh
+// tunnel (loopback), and the VM's LAN/tailnet address. Keeping a LIST and
+// switching between them beats retyping a URL, which is what the single input
+// forced. `hqBase` stays the one value background.js and content.js read, so
+// the rest of the extension is unchanged.
+const HQ_DEFAULT = "http://127.0.0.1:8377";
+const HQ_SEED = [HQ_DEFAULT, "http://192.168.0.43:8377"];
+
+const hqPick = document.getElementById("hqPick");
+const hqInput = document.getElementById("hqBase");
+const hqNote = document.getElementById("hqBaseNote");
+const hqAdd = document.getElementById("hqAdd");
+const hqDel = document.getElementById("hqDel");
+const hqTest = document.getElementById("hqTest");
+
+const hqClean = (u) => String(u || "").trim().replace(/\/+$/, "");
+const hqOrigin = (u) => new URL(u).origin + "/*";   // throws on a bad URL
+
+function hqNoteFor(url) {
+  if (url === HQ_DEFAULT) return "loopback: a local HQ, or the ssh tunnel to the VM";
+  return "custom host";
+}
+
+function hqRender(list, active) {
+  hqPick.textContent = "";
+  for (const u of list) {
+    const o = document.createElement("option");
+    o.value = u;
+    o.textContent = u;
+    if (u === active) o.selected = true;
+    hqPick.appendChild(o);
+  }
+  hqDel.disabled = list.length < 2;
+  hqNote.textContent = hqNoteFor(active);
+}
+
+function hqLoad(cb) {
+  chrome.storage.sync.get({ hqBase: HQ_DEFAULT, hqBases: null }, ({ hqBase, hqBases }) => {
+    const active = hqClean(hqBase) || HQ_DEFAULT;
+    // Migration: a profile that only ever had the single `hqBase` gets a list
+    // seeded from it plus the known addresses.
+    const list = Array.isArray(hqBases) && hqBases.length
+      ? hqBases.map(hqClean).filter(Boolean)
+      : [...new Set([active, ...HQ_SEED])];
+    if (!list.includes(active)) list.unshift(active);
+    cb(list, active);
+  });
+}
+
+function hqSave(list, active) {
+  chrome.storage.sync.set({ hqBases: list, hqBase: active }, () => hqRender(list, active));
+}
+
+hqLoad((list, active) => {
+  hqRender(list, active);
+  hqInput.value = "";
+});
+
+// Switching the active server is one click and needs no permission prompt: the
+// origin was already granted when it was added.
+hqPick.addEventListener("change", () => {
+  hqLoad((list) => hqSave(list, hqClean(hqPick.value)));
+});
+
+// Adding runs from a real click, NOT from a debounced input handler. Chrome
+// only grants chrome.permissions.request inside a user gesture, and the old
+// code asked from inside a setTimeout, so adding any custom host always failed.
+hqAdd.addEventListener("click", () => {
+  const raw = hqClean(hqInput.value);
+  if (!raw) { hqNote.textContent = "type a URL first"; return; }
+  let origin;
+  try { origin = hqOrigin(raw); }
+  catch (e) { hqNote.textContent = "not a valid URL"; return; }
+  const commit = () => hqLoad((list) => {
+    hqSave([...new Set([raw, ...list])], raw);
+    hqInput.value = "";
+  });
+  chrome.permissions.contains({ origins: [origin] }, (has) => {
+    if (has) return commit();
+    chrome.permissions.request({ origins: [origin] }, (granted) => {
+      if (granted) commit();
+      else hqNote.textContent = "permission denied for " + origin;
+    });
+  });
+});
+
+hqDel.addEventListener("click", () => {
+  hqLoad((list, active) => {
+    const gone = hqClean(hqPick.value);
+    const kept = list.filter((u) => u !== gone);
+    if (!kept.length) { hqNote.textContent = "keep at least one server"; return; }
+    hqSave(kept, gone === active ? kept[0] : active);
+  });
+});
+
+// "test" answers the only question that matters: is this HQ actually reachable
+// from this browser right now. The service worker does the fetch, because it
+// holds the host permissions.
+hqTest.addEventListener("click", () => {
+  const target = hqClean(hqPick.value);
+  hqNote.textContent = "checking " + target + " ...";
+  chrome.storage.sync.get({ hqBase: HQ_DEFAULT }, ({ hqBase }) => {
+    const restore = hqClean(hqBase);
+    const ask = () => chrome.runtime.sendMessage({ type: "hqWorkers" }, (r) => {
+      if (chrome.runtime.lastError) { hqNote.textContent = "no answer from the extension"; return; }
+      if (!r || !r.ok) hqNote.textContent = "unreachable: " + ((r && r.error) || "unknown");
+      else hqNote.textContent = `reachable, ${(r.workers || []).length} worker(s)`;
+      if (restore !== target) chrome.storage.sync.set({ hqBase: restore });
+    });
+    // hqWorkers always uses the stored base, so point it at the row under test.
+    if (restore !== target) chrome.storage.sync.set({ hqBase: target }, ask);
+    else ask();
+  });
+});
