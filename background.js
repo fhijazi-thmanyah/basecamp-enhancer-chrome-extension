@@ -52,6 +52,21 @@ const HANDLERS = {
   }),
   // Live worker list: {ok, workers:[{session,title,status,tail,web_url,...}], claims:[...]}
   hqWorkers: () => hqCall("/api/workers"),
+  // Suggested replies: the pending drafts on HQ's runway ({ok, runway:[...]})
+  hqRunway: () => hqCall("/api/runway"),
+  // A runway button: {action: send|edit|revise|reject, file, body?, instruction?}.
+  // Only these four — the extension never gets HQ's job/autosend controls.
+  hqAction: (msg) => {
+    const p = msg.payload || {};
+    if (!["send", "edit", "revise", "reject"].includes(p.action)) {
+      return Promise.resolve({ ok: false, error: "action not allowed from the page" });
+    }
+    return hqCall("/api/action", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: p.action, file: p.file, body: p.body, instruction: p.instruction }),
+    });
+  },
   // Kill a worker (HQ refuses non-hq-* sessions server-side)
   hqKill: (msg) => hqCall("/api/workers/action", {
     method: "POST",

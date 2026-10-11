@@ -53,6 +53,8 @@ Only needed if the `cc-launcher` PostHog feature flag is enabled for your accoun
 
 If the extension can't reach the backend, the launch popover shows this same command inline.
 
+**Suggested replies** (same flag, its own popup toggle) show Claude's drafted replies on the thread they answer, with Send / Edit / ✨Revise / Reject, plus a bottom-left "💬 N suggested replies" pill listing all of them. They need the full HQ app on top of cc-tmux-api (its `/api/runway` + `/api/action` routes); against a bare cc-tmux-api the pill shows "HQ ⚠" and nothing else changes.
+
 ## Safari
 
 The Safari port wraps the exact same extension files in an Xcode project

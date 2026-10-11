@@ -481,3 +481,136 @@ html[data-bce-font] body,
 html[data-bce-font] body :not(code, pre, kbd, samp, code *, pre *) {
   font-family: var(--bce-font), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
 }
+
+/* ---- Feature 6: suggested replies (HQ runway, inline) -------------------
+   .bce-rw = one draft card (inline above the comment composer / at the bottom
+   of a chat pane, and inside the panel). .bce-rwfab = the bottom-left pill,
+   .bce-rwpanel = the whole-runway list it opens. Plain hex + the .bce-dark
+   palette, like every other overlay (see the theming gotcha in CLAUDE.md). */
+.bce-rw-slot { margin: 12px 0; display: flex; flex-direction: column; gap: 10px; }
+.bce-rw {
+  border: 1px solid #c9b8f2;
+  border-inline-start: 4px solid #7c5cd6;
+  border-radius: 10px;
+  background: #faf8ff;
+  color: #1c1c1c;
+  padding: 10px 12px;
+  margin: 8px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.chat__lines > .bce-rw { margin: 10px 16px; }
+.bce-rw--busy { opacity: 0.7; }
+.bce-rw__head { display: flex; gap: 8px; align-items: baseline; font-size: 12px; }
+.bce-rw__tag { font-weight: 700; color: #5b3fc4; }
+.bce-rw__age { color: #777; }
+.bce-rw__to { font-size: 12px; color: #555; display: flex; flex-direction: column; gap: 4px; }
+.bce-rw__to a { color: #1f6feb; font-weight: 600; }
+.bce-rw__quote {
+  all: unset;
+  cursor: pointer;
+  font-size: 12px;
+  color: #444;
+  border-inline-start: 3px solid #bbb;
+  padding: 2px 8px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 4px;
+}
+.bce-rw__body { white-space: pre-wrap; word-break: break-word; unicode-bidi: plaintext; }
+.bce-rw__edit {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 120px;
+  resize: vertical;
+  font: inherit;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #bbb;
+  unicode-bidi: plaintext;
+}
+.bce-rw__acts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.bce-rw__btn {
+  font: 600 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background: #fff;
+  color: #1c1c1c;
+  cursor: pointer;
+}
+.bce-rw__btn[hidden] { display: none !important; }
+.bce-rw__btn:disabled { cursor: progress; }
+.bce-rw__btn--send { background: #2da562; border-color: #2da562; color: #fff; }
+.bce-rw__btn--armed { background: #d97706; border-color: #d97706; color: #fff; }
+.bce-rw__btn--reject { color: #c0392b; margin-inline-start: auto; }
+.bce-rw__rev {
+  flex: 1 1 160px;
+  min-width: 120px;
+  font-size: 12px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+.bce-rw__msg { font-size: 12px; color: #b45309; }
+.bce-rw__msg:empty { display: none; }
+/* the exact comment a draft answers */
+.bce-rw-replyto { box-shadow: inset 4px 0 0 #7c5cd6; }
+.bce-rw-target { outline: 3px solid #7c5cd6; outline-offset: 4px; transition: outline-color 0.3s; }
+
+.bce-rwfab {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 2147483000;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #7c5cd6;
+  background: #7c5cd6;
+  color: #fff;
+  font: 600 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+.bce-rwpanel {
+  position: fixed;
+  left: 16px;
+  bottom: 60px;
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 100px);
+  z-index: 2147483001;
+  background: #fff;
+  color: #1c1c1c;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.28);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.bce-rwpanel__top {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  font-size: 13px;
+}
+.bce-rwpanel__top a { margin-inline-start: auto; color: #1f6feb; font-size: 12px; }
+.bce-rwpanel__err { color: #c0392b; font-size: 12px; padding: 0 12px; }
+.bce-rwpanel__err:empty { display: none; }
+.bce-rwpanel__list { overflow-y: auto; padding: 4px 12px 12px; }
+
+.bce-dark .bce-rw { background: #2a2540; color: #e8e8e8; border-color: #5b4a99; }
+.bce-dark .bce-rw__to, .bce-dark .bce-rw__age, .bce-dark .bce-rw__quote { color: #b8b8c8; }
+.bce-dark .bce-rw__tag { color: #c4b2ff; }
+.bce-dark .bce-rw__btn, .bce-dark .bce-rw__rev, .bce-dark .bce-rw__edit {
+  background: #1d2224; color: #e8e8e8; border-color: rgba(255, 255, 255, 0.22);
+}
+.bce-dark .bce-rw__btn--send { background: #2da562; color: #fff; }
+.bce-dark .bce-rw__btn--armed { background: #d97706; color: #fff; }
+.bce-dark .bce-rwpanel { background: #262b2d; color: #e8e8e8; border-color: rgba(255, 255, 255, 0.16); }

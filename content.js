@@ -61,6 +61,7 @@
     bcFont: "plex",
     fullWidth: false, // widen Basecamp's centered middle column to the full screen
     ccLaunch: true,
+    runway: true, // suggested replies from the HQ runway (same launcher gate)
     telemetry: true,
     reactionEmojis: DEFAULT_EMOJIS,
     menuItems: DEFAULT_MENU_ITEMS,
@@ -1426,6 +1427,296 @@
   function applyFullWidth() { document.documentElement.setAttribute("data-bce-wide", ""); }
   function removeFullWidth() { document.documentElement.removeAttribute("data-bce-wide"); }
 
+  // ---- Feature 6: suggested replies (the HQ runway, inline) ---------------
+  // Claude drafts parked in HQ's outbox (artifacts/outbox/*.md) shown ON the
+  // thread they answer, with the same Send / Edit / Revise / Reject the /hq
+  // runway has. HQ stays the single owner of drafts: every button is one
+  // POST /api/action through background.js, so a card sent here disappears
+  // from /hq and vice versa. Same gate as the launcher (needs a local HQ).
+  //   • inline: a card above the comment composer of the thread a draft
+  //     replies to, or at the bottom of the chat pane it posts into;
+  //   • everywhere: a "💬 N" pill (bottom-left) opening the whole runway, each
+  //     card naming the thread it replies to, with a link there.
+  const RW_POLL_MS = 30000;
+  let rwDrafts = [];
+  let rwLoaded = false; // first settle; nothing renders before it
+  let rwError = "";
+  let rwTimer = null;
+  let rwPanelOpen = false;
+  const rwTitles = new Map(); // url -> fetched page title
+  const rwTitleReqs = new Set();
+
+  const rwOn = () => ccFlags.launcher && settings.runway;
+
+  // Where a draft lands, on THIS origin (drafts say app.basecamp.com; the page
+  // may be 3.basecamp.com, and a cross-origin fetch of the title would fail).
+  function rwTargetUrl(d, origin, acct) {
+    if (d.kind === "chat") {
+      return d.project && acct ? `${origin}/${acct}/buckets/${d.project}/chats/${d.target}` : "";
+    }
+    try { const u = new URL(d.target); return origin + u.pathname + u.hash; } catch { return ""; }
+  }
+  // Does draft `d` reply to the conversation at `url`? Comments: the target's
+  // recording id is a path segment of the page. Chats: the room is
+  // /buckets/<b>/chats/<id> or, for a ping, /circles/<bucket>.
+  function rwMatches(d, url) {
+    let path;
+    try { path = new URL(url).pathname.replace(/@\d+$/, ""); } catch { return false; }
+    if (d.kind === "chat") {
+      return path.includes(`/chats/${d.target}`) || (!!d.project && new RegExp(`/circles/${d.project}(?:/|$)`).test(path));
+    }
+    // collection + id ("cards/123", "messages/456"): the id alone could also be
+    // a chat's, and a card on the wrong page is one Send away from wrong people
+    let tail;
+    try { tail = (new URL(d.target).pathname.match(/\/([a-z_]+\/\d+)\/?$/) || [])[1]; } catch { return false; }
+    return !!tail && new RegExp(`/${tail}(?:/|$)`).test(path);
+  }
+  // A target like …/cards/1#__recording_2 answers ONE comment, not the thread.
+  const rwCommentId = (d) => ((d.target || "").match(/#__recording_(\d+)/) || [])[1];
+  const rwAcct = () => (location.pathname.match(/^\/(\d+)\//) || [])[1] || "";
+  const rwUrl = (d) => rwTargetUrl(d, location.origin, rwAcct());
+
+  function rwPoll() {
+    if (!rwOn() || document.hidden) return;
+    hqSend({ type: "hqRunway" }).then((r) => {
+      rwLoaded = true;
+      rwError = r.ok ? "" : String(r.error || "HQ error");
+      if (r.ok) rwDrafts = r.runway || [];
+      applyRunway();
+    });
+  }
+
+  function rwTitle(d) {
+    const url = rwUrl(d);
+    if (!url) return d.kind === "chat" ? `chat ${d.target}` : d.target;
+    const key = url.split("#")[0];
+    if (rwTitles.has(key)) return rwTitles.get(key);
+    if (!rwTitleReqs.has(key)) {
+      rwTitleReqs.add(key);
+      fetch(key, { credentials: "same-origin" }).then((r) => (r.ok ? r.text() : "")).then((h) => {
+        const t = new DOMParser().parseFromString(h, "text/html").title.trim();
+        rwTitles.set(key, t || key);
+        applyRunway();
+      }).catch(() => rwTitles.set(key, key));
+    }
+    return (d.kind === "chat" ? "chat " : "") + "…";
+  }
+
+  function rwAction(payload) {
+    return hqSend({ type: "hqAction", payload });
+  }
+
+  // One card component, used inline AND in the panel. Keyed by draft file;
+  // `data-sig` = the body, so a re-render only touches a card whose draft
+  // actually changed, and never one with an open editor or a running action.
+  function rwCard(d, inPanel) {
+    const card = ccEl("div", "bce-rw");
+    card.dataset.file = d.file;
+    const head = ccEl("div", "bce-rw__head");
+    head.append(ccEl("span", "bce-rw__tag", "💬 Suggested reply"), ccEl("span", "bce-rw__age", d.age + " ago"));
+    const to = ccEl("div", "bce-rw__to");
+    const cid = rwCommentId(d);
+    if (inPanel) {
+      const a = ccEl("a", "", "↩ " + rwTitle(d));
+      a.href = rwUrl(d) || "#";
+      a.dir = "auto";
+      to.append(d.kind === "chat" ? "posts into chat: " : "new comment on: ", a);
+    } else if (d.kind === "chat") {
+      to.textContent = "↩ posts as a new line in this chat";
+    } else if (cid) {
+      to.textContent = "↩ replies to the highlighted comment";
+    } else {
+      to.textContent = "↩ posts as a new comment on this thread";
+    }
+    const quoted = cid && !inPanel && document.getElementById("__recording_" + cid);
+    if (quoted) {
+      const q = ccEl("button", "bce-rw__quote", (quoted.querySelector(".formatted_content")?.textContent || "").trim().slice(0, 160) + "…");
+      q.type = "button";
+      q.dir = "auto";
+      q.title = "Jump to the comment this answers";
+      q.addEventListener("click", () => rwFlash(quoted));
+      to.append(q);
+    }
+    const body = ccEl("div", "bce-rw__body");
+    body.dir = "auto";
+    const edit = ccEl("textarea", "bce-rw__edit");
+    edit.dir = "auto";
+    edit.hidden = true;
+    const msg = ccEl("div", "bce-rw__msg");
+    const acts = ccEl("div", "bce-rw__acts");
+    const btn = (label, cls) => { const b = ccEl("button", "bce-rw__btn " + (cls || ""), label); b.type = "button"; return b; };
+    const send = btn("Send", "bce-rw__btn--send");
+    const editB = btn("Edit");
+    const save = btn("Save", "bce-rw__btn--send");
+    const cancel = btn("Cancel");
+    const revIn = ccEl("input", "bce-rw__rev");
+    revIn.placeholder = "revise with Claude, e.g. اختصرها";
+    revIn.dir = "auto";
+    const revB = btn("✨ Revise");
+    const reject = btn("Reject", "bce-rw__btn--reject");
+    save.hidden = cancel.hidden = true;
+    acts.append(send, editB, save, cancel, revIn, revB, reject);
+    card.append(head, to, body, edit, acts, msg);
+
+    const setBody = (text) => { body.textContent = text; card.dataset.sig = text; };
+    setBody(d.body);
+    const busy = (on, note) => {
+      card.classList.toggle("bce-rw--busy", on);
+      acts.querySelectorAll("button,input").forEach((x) => { x.disabled = on; });
+      msg.textContent = note || "";
+    };
+    const run = async (payload, note) => {
+      busy(true, note);
+      const r = await rwAction(payload);
+      busy(false, r.ok ? "" : String(r.output || r.error || "failed").slice(0, 300));
+      return r;
+    };
+    const editing = (on) => {
+      card.classList.toggle("bce-rw--editing", on);
+      edit.hidden = !on; body.hidden = on;
+      save.hidden = cancel.hidden = !on; send.hidden = editB.hidden = on;
+      if (on) { edit.value = card.dataset.sig; edit.style.height = Math.min(400, body.scrollHeight + 24) + "px"; edit.focus(); }
+    };
+    const gone = () => { rwDrafts = rwDrafts.filter((x) => x.file !== d.file); applyRunway(); };
+
+    // two-click arming, like /hq: Send posts to real people
+    let armed = 0;
+    send.addEventListener("click", async () => {
+      if (!armed) {
+        send.textContent = "Confirm send?";
+        send.classList.add("bce-rw__btn--armed");
+        armed = setTimeout(() => { armed = 0; send.textContent = "Send"; send.classList.remove("bce-rw__btn--armed"); }, 4000);
+        return;
+      }
+      clearTimeout(armed); armed = 0;
+      const r = await run({ action: "send", file: d.file }, "sending…");
+      if (r.ok) gone(); else { send.textContent = "Send"; send.classList.remove("bce-rw__btn--armed"); }
+    });
+    editB.addEventListener("click", () => editing(true));
+    cancel.addEventListener("click", () => editing(false));
+    save.addEventListener("click", async () => {
+      const r = await run({ action: "edit", file: d.file, body: edit.value }, "saving…");
+      if (r.ok) { setBody(r.body); editing(false); }
+    });
+    const revise = async () => {
+      const instruction = revIn.value.trim();
+      if (!instruction) return revIn.focus();
+      const r = await run({ action: "revise", file: d.file, instruction }, "Claude is revising… (can take a minute)");
+      if (r.ok) { setBody(r.body); revIn.value = ""; }
+    };
+    revB.addEventListener("click", revise);
+    revIn.addEventListener("keydown", (e) => { if (e.key === "Enter") revise(); });
+    reject.addEventListener("click", async () => {
+      const r = await run({ action: "reject", file: d.file }, "rejecting…");
+      if (r.ok) gone();
+    });
+    return card;
+  }
+
+  function rwFlash(el) {
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    el.classList.add("bce-rw-target");
+    setTimeout(() => el.classList.remove("bce-rw-target"), 2500);
+  }
+
+  // Put `want` (draft files, in order) into `host` before `before`, reusing
+  // live cards: an open editor or a running action must survive a re-render.
+  function rwSync(host, before, want, inPanel) {
+    const have = new Map([...host.querySelectorAll(":scope > .bce-rw")].map((c) => [c.dataset.file, c]));
+    for (const [file, c] of have) if (!want.some((d) => d.file === file)) c.remove();
+    for (const d of want) {
+      let c = have.get(d.file);
+      const idle = c && !c.classList.contains("bce-rw--editing") && !c.classList.contains("bce-rw--busy");
+      if (c && idle && c.dataset.sig !== d.body) { c.remove(); c = null; }
+      if (!c) c = rwCard(d, inPanel);
+      else if (inPanel) { // refresh the lazily-fetched title in place
+        const a = c.querySelector(".bce-rw__to a");
+        if (a) a.textContent = "↩ " + rwTitle(d);
+      }
+      if (before && before.parentElement === host) { if (c.nextSibling !== before) host.insertBefore(c, before); }
+      else if (c.parentElement !== host || c.nextSibling) host.appendChild(c);
+    }
+  }
+
+  function applyRunway() {
+    if (!rwOn()) return removeRunway();
+    if (!rwTimer) {
+      rwTimer = setInterval(rwPoll, RW_POLL_MS);
+      document.addEventListener("visibilitychange", rwPoll);
+      rwPoll();
+    }
+    if (!rwLoaded) return;
+    // we run at document_start: a fast HQ can answer before <body> exists
+    if (!document.body) return document.addEventListener("DOMContentLoaded", applyRunway, { once: true });
+    syncTheme();
+
+    // inline: comment drafts above the composer, chat drafts at the pane bottom
+    const here = rwDrafts.filter((d) => d.kind !== "chat" && rwMatches(d, location.href));
+    const main = document.querySelector("main");
+    if (main && !main.querySelector(".chat__lines")) {
+      const form = main.querySelector("article.thread-entry--form");
+      let slot = main.querySelector(":scope .bce-rw-slot");
+      if (!slot && here.length) slot = ccEl("div", "bce-rw-slot");
+      if (slot) {
+        if (form) { if (slot.nextElementSibling !== form) form.before(slot); }
+        else if (slot.parentElement !== (main.querySelector(".perma") || main)) (main.querySelector(".perma") || main).append(slot);
+        rwSync(slot, null, here, false);
+        if (!here.length) slot.remove();
+      }
+      for (const d of here) {
+        const cid = rwCommentId(d);
+        const q = cid && document.getElementById("__recording_" + cid);
+        if (q) q.classList.add("bce-rw-replyto");
+      }
+    }
+    document.querySelectorAll(".chat__lines").forEach((lines) => {
+      const url = ccPaneUrl(lines.parentElement);
+      rwSync(lines, null, rwDrafts.filter((d) => d.kind === "chat" && rwMatches(d, url)), false);
+    });
+
+    // everywhere: the pill + panel
+    let fab = document.querySelector(".bce-rwfab");
+    if (!rwDrafts.length && !rwError) { fab?.remove(); document.querySelector(".bce-rwpanel")?.remove(); return; }
+    if (!fab) {
+      fab = ccEl("button", "bce-rwfab");
+      fab.type = "button";
+      fab.addEventListener("click", () => { rwPanelOpen = !rwPanelOpen; applyRunway(); });
+      document.body.append(fab);
+    }
+    const nHere = document.querySelectorAll(".bce-rw-slot > .bce-rw, .chat__lines > .bce-rw").length;
+    fab.textContent = rwError ? "💬 HQ ⚠" : `💬 ${rwDrafts.length} suggested repl${rwDrafts.length === 1 ? "y" : "ies"}` + (nHere ? ` · ${nHere} here` : "");
+    fab.title = rwError || "Claude's drafted replies waiting for you (HQ runway)";
+
+    let panel = document.querySelector(".bce-rwpanel");
+    if (!rwPanelOpen) { panel?.remove(); return; }
+    if (!panel) {
+      panel = ccEl("div", "bce-rwpanel");
+      const top = ccEl("div", "bce-rwpanel__top");
+      const hq = ccEl("a", "", "open HQ ↗");
+      hq.href = hqUrl("/hq");
+      hq.target = "_blank";
+      const x = ccEl("button", "bce-rw__btn", "✕");
+      x.type = "button";
+      x.addEventListener("click", () => { rwPanelOpen = false; applyRunway(); });
+      top.append(ccEl("b", "", "Suggested replies"), hq, x);
+      panel.append(top, ccEl("div", "bce-rwpanel__err"), ccEl("div", "bce-rwpanel__list"));
+      document.body.append(panel);
+    }
+    panel.querySelector(".bce-rwpanel__err").textContent = rwError;
+    // newest first; the ones for this page float to the top
+    const order = [...rwDrafts].reverse().sort((a, b) => rwMatches(b, location.href) - rwMatches(a, location.href));
+    rwSync(panel.querySelector(".bce-rwpanel__list"), null, order, true);
+  }
+
+  function removeRunway() {
+    clearInterval(rwTimer);
+    if (rwTimer) document.removeEventListener("visibilitychange", rwPoll);
+    rwTimer = null;
+    rwLoaded = false;
+    document.querySelectorAll(".bce-rw,.bce-rw-slot,.bce-rwfab,.bce-rwpanel").forEach((n) => n.remove());
+    document.querySelectorAll(".bce-rw-replyto").forEach((n) => n.classList.remove("bce-rw-replyto"));
+  }
+
   // ---- Wiring -----------------------------------------------------------
 
   // Our own injected DOM. Never re-enhance it: decorating a badge or a lifted
@@ -1433,7 +1724,7 @@
   // sees, re-entering them is how a feedback loop starts. (`.bce-anchor` is
   // deliberately NOT here — that class sits on Basecamp's own bubble, whose
   // contents do need enhancing.)
-  const OURS_SEL = ".bce-ago,.bce-reactions,.bce-hoverbar,.bce-cc-btn,.bce-ccpop";
+  const OURS_SEL = ".bce-ago,.bce-reactions,.bce-hoverbar,.bce-cc-btn,.bce-ccpop,.bce-rw,.bce-rw-slot,.bce-rwfab,.bce-rwpanel";
 
   // Enhance a freshly added subtree, honoring current settings. Subtree-local
   // work only — see enhance() for the page-global part.
@@ -1481,6 +1772,9 @@
       if (bg && bg !== "transparent" && !/rgba\(\s*0,\s*0,\s*0,\s*0\s*\)/.test(bg)) break;
       el = el.parentElement;
     }
+    // nothing opaque yet (document_start, before <body>): that's not "dark" —
+    // rgba(0,0,0,0) would otherwise read as luminance 0
+    if (!el) return false;
     const m = bg && bg.match(/\d+(\.\d+)?/g);
     if (!m || m.length < 3) return false;
     const [r, g, b] = m.map(Number);
@@ -1504,6 +1798,7 @@
     // Launcher buttons are per-pane; Turbo body swaps drop them, and the
     // turbo:* → reconcile listeners bring them right back.
     if (ccFlags.launcher && settings.ccLaunch) applyCcLaunchers(); else removeCcLaunchers();
+    applyRunway(); // gates itself on rwOn()
   }
 
   // Run as early as possible (document_start): the observer below catches most
@@ -1616,6 +1911,7 @@
     clearInterval(labelTimer);
     clearInterval(ccBusyTimer);
     clearInterval(ccPollTimer);
+    clearInterval(rwTimer);
   }
 
   // Turbo re-renders (cable-stream updates, morph refreshes, frame loads) can

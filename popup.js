@@ -26,11 +26,12 @@ const DEFAULTS = {
   bcFont: "plex", // "" = original | plex | sans | seriftext | serifdisplay (keep in sync with content.js)
   fullWidth: false,
   ccLaunch: true,
+  runway: true,
   telemetry: true,
   reactionEmojis: DEFAULT_EMOJIS,
   menuItems: DEFAULT_MENU_ITEMS,
 };
-const TOGGLES = ["timeLabels", "rtl", "fullWidth", "inlineReactions", "inlineMenus", "ccLaunch", "telemetry"];
+const TOGGLES = ["timeLabels", "rtl", "fullWidth", "inlineReactions", "inlineMenus", "ccLaunch", "runway", "telemetry"];
 
 // setting_changed telemetry. Sent from HERE because the popup is the single
 // writer of settings — every open tab hears storage.onChanged, so capturing
@@ -166,7 +167,9 @@ document.getElementById("resetMenu").addEventListener("click", () => {
 chrome.storage.sync.get(DEFAULTS, (settings) => {
   // personal feature; the row stays hidden unless the cc-launcher flag is on
   chrome.storage.local.get("bceCcFlags", (st) => {
-    document.getElementById("ccRow").hidden = !(st && st.bceCcFlags && st.bceCcFlags.launcher);
+    const off = !(st && st.bceCcFlags && st.bceCcFlags.launcher);
+    document.getElementById("ccRow").hidden = off;
+    document.getElementById("runwayRow").hidden = off;
   });
   for (const key of TOGGLES) document.getElementById(key).checked = settings[key];
   document.getElementById("bcFont").value = settings.bcFont ?? "plex";

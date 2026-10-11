@@ -1,0 +1,56 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Test message</title>
+<link rel="stylesheet" href="/ext/styles.css">
+<script src="/stub.js"></script><script src="/ext/content.js"></script></head>
+<body style="background:#fff;font-family:sans-serif">
+<main class="perma" style="width:700px;margin:0 auto">
+ <h1>رسالة اختبار</h1>
+ <article class="thread-entry recording" id="__recording_333"><div class="formatted_content">فارس، نقدر نعتمد Databricks بدل Accounts add-on؟</div></article>
+ <article class="thread-entry recording" id="__recording_334"><div class="formatted_content">another comment</div></article>
+ <article class="thread-entry thread-entry--form">[comment composer]</article>
+</main>
+<turbo-frame src="/4149173/my/sidebar/circles/48437449" style="position:fixed;right:10px;bottom:10px;width:360px;height:420px;border:1px solid #999;background:#fff;display:block">
+ <div class="pane" style="height:100%;display:flex;flex-direction:column"><div class="chat__lines" style="flex:1;overflow:auto"><div style="padding:8px">محمد: تذكير بموعد أناناس</div></div><div class="chat__footer">[composer]</div></div>
+</turbo-frame>
+<pre id="out"></pre>
+<script>
+const out = (k, v) => { document.getElementById("out").textContent += k + "=" + JSON.stringify(v) + "\n"; };
+const q = (s) => document.querySelector(s);
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+window.addEventListener("load", async () => {
+  await wait(800);
+  out("slotBeforeForm", q(".bce-rw-slot")?.nextElementSibling?.classList.contains("thread-entry--form"));
+  out("inlineCards", document.querySelectorAll(".bce-rw-slot > .bce-rw").length);
+  out("inlineTo", q(".bce-rw-slot .bce-rw__to")?.textContent);
+  out("replytoMarked", q("#__recording_333").classList.contains("bce-rw-replyto"));
+  out("chatCards", document.querySelectorAll(".chat__lines > .bce-rw").length);
+  out("fab", q(".bce-rwfab")?.textContent);
+  if (location.hash === "#shot") { q(".bce-rwfab").click(); await wait(300); return; }
+  q(".bce-rwfab").click(); await wait(200);
+  out("panelCards", document.querySelectorAll(".bce-rwpanel .bce-rw").length);
+  out("panelFirstIsHere", q(".bce-rwpanel .bce-rw").dataset.file);
+  q(".bce-rwfab").click(); await wait(100);
+  out("panelClosed", !q(".bce-rwpanel"));
+  const card = q(".bce-rw-slot .bce-rw");
+  const btn = (c, t) => [...c.querySelectorAll("button")].find((b) => b.textContent.startsWith(t));
+  btn(card, "Edit").click();
+  out("editorShown", !card.querySelector(".bce-rw__edit").hidden);
+  card.querySelector(".bce-rw__edit").value = "نص معدل";
+  btn(card, "Save").click(); await wait(100);
+  out("bodyAfterEdit", card.querySelector(".bce-rw__body").textContent);
+  out("editPayload", window.__log.filter((m) => m.type === "hqAction").pop().payload);
+  card.querySelector(".bce-rw__rev").value = "اختصرها";
+  btn(card, "✨").click(); await wait(100);
+  out("bodyAfterRevise", card.querySelector(".bce-rw__body").textContent);
+  btn(card, "Send").click();
+  out("armed", btn(card, "Confirm") ? true : false);
+  out("noSendYet", !window.__log.some((m) => m.payload && m.payload.action === "send"));
+  btn(card, "Confirm").click(); await wait(100);
+  out("sent", window.__log.filter((m) => m.type === "hqAction").pop().payload);
+  out("inlineAfterSend", document.querySelectorAll(".bce-rw-slot .bce-rw").length);
+  const cc = q(".chat__lines > .bce-rw");
+  btn(cc, "Reject").click(); await wait(100);
+  out("chatAfterReject", document.querySelectorAll(".chat__lines > .bce-rw").length);
+  out("fabAfter", q(".bce-rwfab")?.textContent);
+  out("DONE", true);
+});
+</script></body></html>
