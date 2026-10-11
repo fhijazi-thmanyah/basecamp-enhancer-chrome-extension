@@ -161,9 +161,19 @@
     // it. One same-origin fetch, then cached for good.
     let email = "", name = "";
     try {
+      // The profile link lives in the page chrome, which plenty of views don't
+      // render (a maximized ping, an early document_start pass, a frame that
+      // hasn't filled yet). Without it the old code gave up and left email
+      // empty, so identify() fell back to "bc:<person-id>" — and an
+      // email-targeted feature flag can never match that person. That is
+      // exactly how the Claude Code launcher disappeared on a freshly
+      // installed profile. Derive /<account>/my/profile from the URL instead.
       const link = document.querySelector('a[href*="/my/profile"]');
-      if (link) {
-        const html = await (await fetch(link.href)).text();
+      const acct = location.pathname.split("/")[1] || "";
+      const url = link ? link.href
+        : /^\d+$/.test(acct) ? `${location.origin}/${acct}/my/profile` : "";
+      if (url) {
+        const html = await (await fetch(url)).text();
         email = (html.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/) || [""])[0];
         name = ((html.match(/<h1[^>]*>\s*([^<]+?)\s*</) || [])[1] || "").trim();
       }

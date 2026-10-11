@@ -165,11 +165,13 @@ document.getElementById("resetMenu").addEventListener("click", () => {
 });
 
 chrome.storage.sync.get(DEFAULTS, (settings) => {
-  // personal feature; the row stays hidden unless the cc-launcher flag is on
+  // personal feature; the launcher row AND its HQ-server editor stay hidden
+  // unless the cc-launcher flag is on
   chrome.storage.local.get("bceCcFlags", (st) => {
-    const off = !(st && st.bceCcFlags && st.bceCcFlags.launcher);
-    document.getElementById("ccRow").hidden = off;
-    document.getElementById("runwayRow").hidden = off;
+    const on = !!(st && st.bceCcFlags && st.bceCcFlags.launcher);
+    document.getElementById("ccRow").hidden = !on;
+    document.getElementById("hqEditor").hidden = !on;
+    document.getElementById("runwayRow").hidden = !on;
   });
   for (const key of TOGGLES) document.getElementById(key).checked = settings[key];
   document.getElementById("bcFont").value = settings.bcFont ?? "plex";
@@ -221,7 +223,11 @@ document.getElementById("resetEmojis").addEventListener("click", () => {
 // forced. `hqBase` stays the one value background.js and content.js read, so
 // the rest of the extension is unchanged.
 const HQ_DEFAULT = "http://127.0.0.1:8377";
-const HQ_SEED = [HQ_DEFAULT, "http://192.168.0.43:8377"];
+// The VM's LAN IP is deliberately NOT here: cc-tmux-api binds 127.0.0.1 on
+// that host, so the LAN address could never answer. `thmanyah` is its
+// MagicDNS name, reachable from anywhere on the tailnet via `tailscale
+// serve --http=8377` (which proxies to that same loopback port).
+const HQ_SEED = [HQ_DEFAULT, "http://thmanyah:8377"];
 
 const hqPick = document.getElementById("hqPick");
 const hqInput = document.getElementById("hqBase");
@@ -234,7 +240,8 @@ const hqClean = (u) => String(u || "").trim().replace(/\/+$/, "");
 const hqOrigin = (u) => new URL(u).origin + "/*";   // throws on a bad URL
 
 function hqNoteFor(url) {
-  if (url === HQ_DEFAULT) return "loopback: a local HQ, or the ssh tunnel to the VM";
+  if (url === HQ_DEFAULT) return "loopback: a local HQ, or an ssh tunnel to one";
+  if (/^https?:\/\/thmanyah(:|\/|$)/.test(url)) return "the VM over tailscale (works off-LAN)";
   return "custom host";
 }
 
@@ -273,10 +280,29 @@ hqLoad((list, active) => {
   hqInput.value = "";
 });
 
-// Switching the active server is one click and needs no permission prompt: the
-// origin was already granted when it was added.
+// Every path that makes a server ACTIVE goes through this: background.js can
+// only fetch an origin the extension holds a host permission for, so activating
+// one we were never granted would just store a base that silently 404s the
+// tray. Seeded entries are exactly that case — they were never "added", so the
+// old "the origin was already granted when it was added" assumption was wrong
+// for them. Runs from a real click/change, which is the user gesture Chrome
+// requires for permissions.request.
+function hqEnsurePerm(url, ok) {
+  let origin;
+  try { origin = hqOrigin(url); }
+  catch (e) { hqNote.textContent = "not a valid URL"; return; }
+  chrome.permissions.contains({ origins: [origin] }, (has) => {
+    if (has) return ok();
+    chrome.permissions.request({ origins: [origin] }, (granted) => {
+      if (granted) ok();
+      else hqNote.textContent = "permission denied for " + origin;
+    });
+  });
+}
+
 hqPick.addEventListener("change", () => {
-  hqLoad((list) => hqSave(list, hqClean(hqPick.value)));
+  const target = hqClean(hqPick.value);
+  hqEnsurePerm(target, () => hqLoad((list) => hqSave(list, target)));
 });
 
 // Adding runs from a real click, NOT from a debounced input handler. Chrome
@@ -285,20 +311,10 @@ hqPick.addEventListener("change", () => {
 hqAdd.addEventListener("click", () => {
   const raw = hqClean(hqInput.value);
   if (!raw) { hqNote.textContent = "type a URL first"; return; }
-  let origin;
-  try { origin = hqOrigin(raw); }
-  catch (e) { hqNote.textContent = "not a valid URL"; return; }
-  const commit = () => hqLoad((list) => {
+  hqEnsurePerm(raw, () => hqLoad((list) => {
     hqSave([...new Set([raw, ...list])], raw);
     hqInput.value = "";
-  });
-  chrome.permissions.contains({ origins: [origin] }, (has) => {
-    if (has) return commit();
-    chrome.permissions.request({ origins: [origin] }, (granted) => {
-      if (granted) commit();
-      else hqNote.textContent = "permission denied for " + origin;
-    });
-  });
+  }));
 });
 
 hqDel.addEventListener("click", () => {
