@@ -9,7 +9,8 @@
  <article class="thread-entry thread-entry--form">[comment composer]</article>
 </main>
 <turbo-frame src="/4149173/my/sidebar/circles/48437449" style="position:fixed;right:10px;bottom:10px;width:360px;height:420px;border:1px solid #999;background:#fff;display:block">
- <div class="pane" style="height:100%;display:flex;flex-direction:column"><div class="chat__lines" style="flex:1;overflow:auto"><div style="padding:8px">محمد: تذكير بموعد أناناس</div></div><div class="chat__footer">[composer]</div></div>
+ <!-- real Basecamp shape (verified live 2026-10-12): a grid room whose lines are a column-REVERSE bc-infinite-page -->
+ <bc-chat-room class="chat__room" style="height:100%;display:grid;grid-template-rows:auto 1fr auto"><header class="chat__header">ping</header><bc-infinite-page class="chat__lines" style="display:flex;flex-direction:column-reverse;overflow:auto;min-height:0"><bc-grouped-dates style="display:block"><div style="padding:8px">محمد: قديم</div><div style="padding:8px">محمد: تذكير بموعد أناناس</div></bc-grouped-dates></bc-infinite-page><footer class="chat__footer" style="display:flex;flex-direction:column"><div class="chat__typing-status"></div><div class="chat__container">[composer]</div></footer></bc-chat-room>
 </turbo-frame>
 <pre id="out"></pre>
 <script>
@@ -22,7 +23,11 @@ window.addEventListener("load", async () => {
   out("inlineCards", document.querySelectorAll(".bce-rw-slot > .bce-rw").length);
   out("inlineTo", q(".bce-rw-slot .bce-rw__to")?.textContent);
   out("replytoMarked", q("#__recording_333").classList.contains("bce-rw-replyto"));
-  out("chatCards", document.querySelectorAll(".chat__lines > .bce-rw").length);
+  out("chatCards", document.querySelectorAll(".chat__footer > .bce-rw-slot > .bce-rw").length);
+  out("chatAboveComposer", q(".chat__footer > .bce-rw-slot")?.nextElementSibling?.classList.contains("chat__container"));
+  out("chatNotInLines", !q(".chat__lines .bce-rw"));
+  { const c = q(".chat__footer .bce-rw")?.getBoundingClientRect(), l = q(".chat__lines").getBoundingClientRect(), k = q(".chat__container").getBoundingClientRect();
+    out("chatVisibleBetweenLinesAndComposer", !!c && c.top >= l.bottom - 1 && c.bottom <= k.top + 1 && c.height > 0); }
   out("fab", q(".bce-rwfab")?.textContent);
   if (location.hash === "#shot") { q(".bce-rwfab").click(); await wait(300); return; }
   q(".bce-rwfab").click(); await wait(200);
@@ -47,9 +52,9 @@ window.addEventListener("load", async () => {
   btn(card, "Confirm").click(); await wait(100);
   out("sent", window.__log.filter((m) => m.type === "hqAction").pop().payload);
   out("inlineAfterSend", document.querySelectorAll(".bce-rw-slot .bce-rw").length);
-  const cc = q(".chat__lines > .bce-rw");
+  const cc = q(".chat__footer .bce-rw");
   btn(cc, "Reject").click(); await wait(100);
-  out("chatAfterReject", document.querySelectorAll(".chat__lines > .bce-rw").length);
+  out("chatAfterReject", document.querySelectorAll(".chat__footer .bce-rw").length);
   out("fabAfter", q(".bce-rwfab")?.textContent);
   out("DONE", true);
 });

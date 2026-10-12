@@ -1444,7 +1444,7 @@
   // POST /api/action through background.js, so a card sent here disappears
   // from /hq and vice versa. Same gate as the launcher (needs a local HQ).
   //   • inline: a card above the comment composer of the thread a draft
-  //     replies to, or at the bottom of the chat pane it posts into;
+  //     replies to, or right above the composer of the chat/ping it posts into;
   //   • everywhere: a "💬 N" pill (bottom-left) opening the whole runway, each
   //     card naming the thread it replies to, with a link there.
   const RW_POLL_MS = 30000;
@@ -1665,7 +1665,7 @@
     const main = document.querySelector("main");
     if (main && !main.querySelector(".chat__lines")) {
       const form = main.querySelector("article.thread-entry--form");
-      let slot = main.querySelector(":scope .bce-rw-slot");
+      let slot = main.querySelector(".bce-rw-slot:not(.bce-rw-slot--chat)");
       if (!slot && here.length) slot = ccEl("div", "bce-rw-slot");
       if (slot) {
         if (form) { if (slot.nextElementSibling !== form) form.before(slot); }
@@ -1679,9 +1679,23 @@
         if (q) q.classList.add("bce-rw-replyto");
       }
     }
+    // Chat drafts go in the pane's FOOTER, right above the composer. Never into
+    // .chat__lines: it is a column-reverse <bc-infinite-page> scroller, so an
+    // appended child renders at the TOP of the history (v1.24 did that, and in
+    // pings/campfires the card sat out of sight above the oldest loaded line).
     document.querySelectorAll(".chat__lines").forEach((lines) => {
-      const url = ccPaneUrl(lines.parentElement);
-      rwSync(lines, null, rwDrafts.filter((d) => d.kind === "chat" && rwMatches(d, url)), false);
+      const room = lines.parentElement;
+      const footer = room && room.querySelector(":scope > .chat__footer");
+      if (!footer) return;
+      const url = ccPaneUrl(room);
+      const want = rwDrafts.filter((d) => d.kind === "chat" && rwMatches(d, url));
+      let slot = footer.querySelector(":scope > .bce-rw-slot");
+      if (!slot && want.length) slot = ccEl("div", "bce-rw-slot bce-rw-slot--chat");
+      if (!slot) return;
+      const composer = footer.querySelector(":scope > .chat__container");
+      if (composer ? slot.nextElementSibling !== composer : slot.parentElement !== footer) composer ? composer.before(slot) : footer.prepend(slot);
+      rwSync(slot, null, want, false);
+      if (!want.length) slot.remove();
     });
 
     // everywhere: the pill + panel
@@ -1693,7 +1707,7 @@
       fab.addEventListener("click", () => { rwPanelOpen = !rwPanelOpen; applyRunway(); });
       document.body.append(fab);
     }
-    const nHere = document.querySelectorAll(".bce-rw-slot > .bce-rw, .chat__lines > .bce-rw").length;
+    const nHere = document.querySelectorAll(".bce-rw-slot > .bce-rw").length;
     fab.textContent = rwError ? "💬 HQ ⚠" : `💬 ${rwDrafts.length} suggested repl${rwDrafts.length === 1 ? "y" : "ies"}` + (nHere ? ` · ${nHere} here` : "");
     fab.title = rwError || "Claude's drafted replies waiting for you (HQ runway)";
 

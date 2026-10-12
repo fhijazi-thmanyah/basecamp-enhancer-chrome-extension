@@ -504,7 +504,10 @@ html[data-bce-font] body :not(code, pre, kbd, samp, code *, pre *) {
   max-width: 100%;
   box-sizing: border-box;
 }
-.chat__lines > .bce-rw { margin: 10px 16px; }
+/* chat/ping: in the footer above the composer; capped so a long draft can
+   never push the composer off a short sidebar ping */
+.bce-rw-slot--chat { margin: 6px 12px; gap: 6px; max-height: 45vh; overflow-y: auto; }
+.bce-rw-slot--chat > .bce-rw { margin: 0; }
 .bce-rw--busy { opacity: 0.7; }
 .bce-rw__head { display: flex; gap: 8px; align-items: baseline; font-size: 12px; }
 .bce-rw__tag { font-weight: 700; color: #5b3fc4; }
