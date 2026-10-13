@@ -617,3 +617,39 @@ html[data-bce-font] body :not(code, pre, kbd, samp, code *, pre *) {
 .bce-dark .bce-rw__btn--send { background: #2da562; color: #fff; }
 .bce-dark .bce-rw__btn--armed { background: #d97706; color: #fff; }
 .bce-dark .bce-rwpanel { background: #262b2d; color: #e8e8e8; border-color: rgba(255, 255, 255, 0.16); }
+
+/* Suggested replies v1.25: (1) the draft body is clamped to 3 lines with a
+   fade; .bce-rw--open expands it to a scrollable max-height so the composer
+   stays in view. (2) .bce-rw-empty = the subtle one-line bar shown on a thread
+   with no draft ("No draft yet · ✍️ Draft a reply"), flipping to a spinner while
+   HQ's draft worker runs. */
+.bce-rw__body { max-height: calc(1.5em * 3); overflow: hidden; position: relative; }
+.bce-rw--clamped:not(.bce-rw--open) .bce-rw__body {
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+          mask-image: linear-gradient(to bottom, #000 55%, transparent);
+  cursor: pointer;
+}
+.bce-rw--open .bce-rw__body { max-height: 40vh; overflow-y: auto; }
+.bce-rw__more {
+  align-self: flex-start; background: none; border: 0; padding: 0;
+  color: #5b3fc4; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.bce-rw__more[hidden] { display: none; }
+.bce-rw-empty {
+  display: flex; align-items: center; gap: 8px;
+  border: 1px dashed #d6caf5; border-radius: 8px;
+  padding: 3px 10px; margin: 0;
+  font-size: 12px; color: #8a7fb0; background: transparent;
+}
+.bce-rw-empty__btn {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  color: #5b3fc4; font-weight: 600; font-size: 12px;
+}
+.bce-rw-empty__btn:disabled { cursor: progress; opacity: 0.8; }
+.bce-rw-empty__spin {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid #c9b8f2; border-top-color: #5b3fc4;
+  animation: bce-spin 0.9s linear infinite;
+}
+.bce-dark .bce-rw-empty { border-color: #4a3f73; color: #a59bc8; }
+.bce-dark .bce-rw-empty__btn, .bce-dark .bce-rw__more { color: #c4b2ff; }

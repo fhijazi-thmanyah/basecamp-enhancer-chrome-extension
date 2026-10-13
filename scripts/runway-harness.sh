@@ -17,7 +17,7 @@ cp "$ROOT/tests/harness/runway.html" "$WWW/4149173/buckets/1/messages/222/index.
 python3 -m http.server "$PORT" --directory "$WWW" >/dev/null 2>&1 & SRV=$!
 sleep 1
 URL="http://localhost:$PORT/4149173/buckets/1/messages/222/"
-OUT=$("$CHROME" --headless=new --disable-gpu --no-sandbox --virtual-time-budget=8000 --dump-dom "$URL" 2>/dev/null \
+OUT=$("$CHROME" --headless=new --disable-gpu --no-sandbox --virtual-time-budget=20000 --dump-dom "$URL" 2>/dev/null \
   | sed -n '/<pre id="out">/,/<\/pre>/p')
 echo "$OUT"
 if [ "${1:-}" = "--shot" ]; then

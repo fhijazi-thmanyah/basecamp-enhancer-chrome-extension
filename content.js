@@ -1549,6 +1549,24 @@
     }
     const body = ccEl("div", "bce-rw__body");
     body.dir = "auto";
+    // 3 lines by default; "more ▾" (or a click on the faded text) expands to a
+    // scrollable 40vh box. No toggle when the draft fits in 3 lines.
+    const more = ccEl("button", "bce-rw__more", "more ▾");
+    more.type = "button";
+    more.hidden = true;
+    const toggleOpen = () => {
+      const open = card.classList.toggle("bce-rw--open");
+      more.textContent = open ? "less ▴" : "more ▾";
+      if (!open) body.scrollTop = 0;
+    };
+    more.addEventListener("click", toggleOpen);
+    body.addEventListener("click", () => { if (card.classList.contains("bce-rw--clamped") && !card.classList.contains("bce-rw--open")) toggleOpen(); });
+    const measure = () => requestAnimationFrame(() => {
+      if (card.classList.contains("bce-rw--open") || body.hidden) return;
+      const over = body.scrollHeight > body.clientHeight + 2;
+      card.classList.toggle("bce-rw--clamped", over);
+      more.hidden = !over;
+    });
     const edit = ccEl("textarea", "bce-rw__edit");
     edit.dir = "auto";
     edit.hidden = true;
@@ -1566,9 +1584,9 @@
     const reject = btn("Reject", "bce-rw__btn--reject");
     save.hidden = cancel.hidden = true;
     acts.append(send, editB, save, cancel, revIn, revB, reject);
-    card.append(head, to, body, edit, acts, msg);
+    card.append(head, to, body, more, edit, acts, msg);
 
-    const setBody = (text) => { body.textContent = text; card.dataset.sig = text; };
+    const setBody = (text) => { body.textContent = text; card.dataset.sig = text; measure(); };
     setBody(d.body);
     const busy = (on, note) => {
       card.classList.toggle("bce-rw--busy", on);
@@ -1585,6 +1603,7 @@
       card.classList.toggle("bce-rw--editing", on);
       edit.hidden = !on; body.hidden = on;
       save.hidden = cancel.hidden = !on; send.hidden = editB.hidden = on;
+      if (on) more.hidden = true; else measure();
       if (on) { edit.value = card.dataset.sig; edit.style.height = Math.min(400, body.scrollHeight + 24) + "px"; edit.focus(); }
     };
     const gone = () => { rwDrafts = rwDrafts.filter((x) => x.file !== d.file); applyRunway(); };
@@ -1621,6 +1640,84 @@
       if (r.ok) gone();
     });
     return card;
+  }
+
+  // ---- the empty state: "No draft yet · ✍️ Draft a reply" -----------------
+  // Shown on a thread that has a composer but no pending draft. A click asks HQ
+  // (POST /api/draft — only the URL goes, never page text) to spawn a worker
+  // that reads the thread and parks a draft via bc_send --draft; we then
+  // fast-poll the runway until a matching draft lands and the bar becomes the
+  // normal card. Keyed by convoKey so sidebar/maximized views share one state.
+  const rwPending = new Map(); // convoKey -> {state: drafting|failed, since, session, msg, ended}
+  const rwLanded = new Set();  // convoKeys whose draft just arrived (flash once)
+  let rwFastTimer = null;
+
+  async function rwDraft(url) {
+    const k = convoKey(url);
+    rwPending.set(k, { state: "drafting", since: Date.now() });
+    applyRunway();
+    const r = await hqSend({ type: "hqDraft", url });
+    tele("rw_draft", { ok: r.ok, reused: !!r.reused, error: r.ok ? undefined : r.error });
+    if (!r.ok) {
+      rwPending.set(k, { state: "failed", msg: String(r.error || "HQ error").slice(0, 160) });
+      return applyRunway();
+    }
+    rwPending.get(k).session = r.session;
+    if (!rwFastTimer) rwFastTimer = setInterval(rwTick, 5000);
+  }
+
+  async function rwTick() {
+    const live = [...rwPending].filter(([, p]) => p.state === "drafting" && p.session);
+    if (!live.length) { clearInterval(rwFastTimer); rwFastTimer = null; return; }
+    const [rw, ws] = await Promise.all([hqSend({ type: "hqRunway" }), hqSend({ type: "hqWorkers" })]);
+    if (rw.ok) { rwDrafts = rw.runway || []; rwError = ""; rwLoaded = true; }
+    for (const [k, p] of live) {
+      if (rwDrafts.some((d) => rwMatches(d, k))) { rwPending.delete(k); rwLanded.add(k); continue; }
+      const age = Date.now() - p.since;
+      const w = ws.ok && (ws.workers || []).find((x) => x.session === p.session);
+      // HQ reaps a draft worker once it is idle, so "gone" usually means the
+      // draft landed; give the runway one more tick before calling it a failure
+      if (ws.ok && age > 30000 && (!w || w.status === "done" || w.status === "idle")) {
+        if (p.ended) Object.assign(p, { state: "failed", msg: "no draft was produced" });
+        else p.ended = true;
+      }
+      if (age > 15 * 60000) Object.assign(p, { state: "failed", msg: "timed out" });
+    }
+    applyRunway();
+  }
+
+  // Ensure (url) or remove (null) the empty bar inside `slot`.
+  function rwEmpty(slot, url) {
+    let bar = slot.querySelector(":scope > .bce-rw-empty");
+    if (!url) return bar && bar.remove();
+    const k = convoKey(url);
+    const p = rwPending.get(k);
+    const sig = p ? p.state + (p.msg || "") : "idle";
+    if (bar && bar.dataset.sig === sig && bar.dataset.key === k) return;
+    if (!bar) { bar = ccEl("div", "bce-rw-empty"); slot.append(bar); }
+    bar.dataset.sig = sig;
+    bar.dataset.key = k;
+    bar.textContent = "";
+    const go = ccEl("button", "bce-rw-empty__btn", "✍️ Draft a reply");
+    go.type = "button";
+    go.title = "Ask Claude (HQ) to read this thread and park a draft here — nothing is sent";
+    go.addEventListener("click", () => rwDraft(url));
+    if (p && p.state === "drafting") {
+      bar.append(ccEl("span", "bce-rw-empty__spin"), ccEl("span", "", "Claude is drafting a reply… it will appear here"));
+    } else if (p && p.state === "failed") {
+      go.textContent = "retry";
+      bar.append(ccEl("span", "", "Draft failed: " + p.msg + " ·"), go);
+    } else {
+      bar.append(ccEl("span", "", "No draft yet ·"), go);
+    }
+  }
+
+  // A just-landed draft: flash its card once.
+  function rwFlashLanded(slot, url) {
+    const k = convoKey(url);
+    if (!rwLanded.has(k)) return;
+    const c = slot.querySelector(":scope > .bce-rw");
+    if (c) { rwLanded.delete(k); rwFlash(c); }
   }
 
   function rwFlash(el) {
@@ -1665,13 +1762,18 @@
     const main = document.querySelector("main");
     if (main && !main.querySelector(".chat__lines")) {
       const form = main.querySelector("article.thread-entry--form");
+      // the empty bar only where a reply is possible (a comment composer) and
+      // only once HQ answered — an unreachable HQ must not read as "no draft"
+      const empty = !here.length && !!form && !rwError;
       let slot = main.querySelector(".bce-rw-slot:not(.bce-rw-slot--chat)");
-      if (!slot && here.length) slot = ccEl("div", "bce-rw-slot");
+      if (!slot && (here.length || empty)) slot = ccEl("div", "bce-rw-slot");
       if (slot) {
         if (form) { if (slot.nextElementSibling !== form) form.before(slot); }
         else if (slot.parentElement !== (main.querySelector(".perma") || main)) (main.querySelector(".perma") || main).append(slot);
         rwSync(slot, null, here, false);
-        if (!here.length) slot.remove();
+        rwEmpty(slot, empty ? location.href : null);
+        rwFlashLanded(slot, location.href);
+        if (!slot.children.length) slot.remove();
       }
       for (const d of here) {
         const cid = rwCommentId(d);
@@ -1689,13 +1791,16 @@
       if (!footer) return;
       const url = ccPaneUrl(room);
       const want = rwDrafts.filter((d) => d.kind === "chat" && rwMatches(d, url));
+      const empty = !want.length && !rwError;
       let slot = footer.querySelector(":scope > .bce-rw-slot");
-      if (!slot && want.length) slot = ccEl("div", "bce-rw-slot bce-rw-slot--chat");
+      if (!slot && (want.length || empty)) slot = ccEl("div", "bce-rw-slot bce-rw-slot--chat");
       if (!slot) return;
       const composer = footer.querySelector(":scope > .chat__container");
       if (composer ? slot.nextElementSibling !== composer : slot.parentElement !== footer) composer ? composer.before(slot) : footer.prepend(slot);
       rwSync(slot, null, want, false);
-      if (!want.length) slot.remove();
+      rwEmpty(slot, empty ? url : null);
+      rwFlashLanded(slot, url);
+      if (!slot.children.length) slot.remove();
     });
 
     // everywhere: the pill + panel
@@ -1737,6 +1842,8 @@
     if (rwTimer) document.removeEventListener("visibilitychange", rwPoll);
     rwTimer = null;
     rwLoaded = false;
+    clearInterval(rwFastTimer);
+    rwFastTimer = null;
     document.querySelectorAll(".bce-rw,.bce-rw-slot,.bce-rwfab,.bce-rwpanel").forEach((n) => n.remove());
     document.querySelectorAll(".bce-rw-replyto").forEach((n) => n.classList.remove("bce-rw-replyto"));
   }

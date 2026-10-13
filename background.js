@@ -54,6 +54,13 @@ const HANDLERS = {
   hqWorkers: () => hqCall("/api/workers"),
   // Suggested replies: the pending drafts on HQ's runway ({ok, runway:[...]})
   hqRunway: () => hqCall("/api/runway"),
+  // "✍️ Draft a reply" on a thread with no draft: HQ spawns a draft-only worker
+  // for this thread URL ({ok, session, reused}). Only the URL is sent.
+  hqDraft: (msg) => hqCall("/api/draft", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url: String(msg.url || "") }),
+  }),
   // A runway button: {action: send|edit|revise|reject, file, body?, instruction?}.
   // Only these four — the extension never gets HQ's job/autosend controls.
   hqAction: (msg) => {

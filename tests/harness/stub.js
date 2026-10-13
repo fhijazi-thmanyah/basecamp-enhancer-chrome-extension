@@ -15,6 +15,11 @@ window.chrome = {
     sendMessage: async (msg) => {
       window.__log.push(msg);
       if (msg.type === "hqRunway") return { ok: true, runway: drafts };
+      if (msg.type === "hqDraft") {
+        // HQ's worker "parks" a draft for this thread a moment later
+        setTimeout(() => drafts.push({ file: "d.md", kind: "comment", target: "https://app.basecamp.com/4149173/buckets/1/messages/222", project: null, age: "0m", body: "مسودة جديدة" }), 1000);
+        return { ok: true, session: "hq-draft-reply-messages-222-1", reused: false };
+      }
       if (msg.type === "hqAction") {
         const p = msg.payload;
         if (p.action === "send" || p.action === "reject") { const i = drafts.findIndex((d) => d.file === p.file); drafts.splice(i, 1); }

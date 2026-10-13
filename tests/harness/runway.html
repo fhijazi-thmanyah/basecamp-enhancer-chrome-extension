@@ -29,6 +29,12 @@ window.addEventListener("load", async () => {
   { const c = q(".chat__footer .bce-rw")?.getBoundingClientRect(), l = q(".chat__lines").getBoundingClientRect(), k = q(".chat__container").getBoundingClientRect();
     out("chatVisibleBetweenLinesAndComposer", !!c && c.top >= l.bottom - 1 && c.bottom <= k.top + 1 && c.height > 0); }
   out("fab", q(".bce-rwfab")?.textContent);
+  { const c = q(".bce-rw-slot .bce-rw"), more = c.querySelector(".bce-rw__more");
+    out("longClamped", c.classList.contains("bce-rw--clamped") && !more.hidden);
+    out("clampHeightLe3Lines", c.querySelector(".bce-rw__body").clientHeight <= 3 * 21 + 2);
+    more.click(); out("expanded", c.classList.contains("bce-rw--open") && more.textContent.startsWith("less"));
+    more.click(); out("collapsed", !c.classList.contains("bce-rw--open"));
+    out("shortNoToggle", q(".chat__footer .bce-rw .bce-rw__more").hidden); }
   if (location.hash === "#shot") { q(".bce-rwfab").click(); await wait(300); return; }
   q(".bce-rwfab").click(); await wait(200);
   out("panelCards", document.querySelectorAll(".bce-rwpanel .bce-rw").length);
@@ -52,10 +58,19 @@ window.addEventListener("load", async () => {
   btn(card, "Confirm").click(); await wait(100);
   out("sent", window.__log.filter((m) => m.type === "hqAction").pop().payload);
   out("inlineAfterSend", document.querySelectorAll(".bce-rw-slot .bce-rw").length);
+  out("emptyBarShown", q("main .bce-rw-empty")?.textContent);
+  out("emptyBarBeforeForm", q("main .bce-rw-slot")?.nextElementSibling?.classList.contains("thread-entry--form"));
   const cc = q(".chat__footer .bce-rw");
   btn(cc, "Reject").click(); await wait(100);
   out("chatAfterReject", document.querySelectorAll(".chat__footer .bce-rw").length);
   out("fabAfter", q(".bce-rwfab")?.textContent);
+  out("chatEmptyBar", q(".chat__footer .bce-rw-empty")?.textContent);
+  q("main .bce-rw-empty__btn").click(); await wait(200);
+  out("draftReq", window.__log.filter((m) => m.type === "hqDraft").pop());
+  out("drafting", q("main .bce-rw-empty")?.textContent);
+  await wait(6000);
+  out("landedCard", q("main .bce-rw-slot > .bce-rw .bce-rw__body")?.textContent);
+  out("emptyGone", !q("main .bce-rw-empty"));
   out("DONE", true);
 });
 </script></body></html>
