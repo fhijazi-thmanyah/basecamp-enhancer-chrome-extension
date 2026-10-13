@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Basecamp Enhancer",
-  "version": "1.25.0",
+  "version": "1.25.1",
   "description": "Quality-of-life for Basecamp: relative timestamps, an Arabic RTL fix, one-click emoji reactions and a hover action bar.",
   "permissions": [
     "storage"

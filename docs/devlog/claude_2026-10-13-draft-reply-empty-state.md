@@ -26,3 +26,12 @@ the worker saves via `bc_thread_watch.py send --draft` (new flag, passes `--draf
   `20261013-063329-chat-10195071141.md` (kind chat, project 48476507, so it matches the
   ping inline), visible in `/api/runway`; second call reused the same worker; bad URL 400.
 - Not tested in real Chrome: the unpacked extension needs a manual reload.
+
+## v1.25.1 - nothing rendered in a "hidden" tab
+Faris reloaded 1.25.0 and the ping with محمد عطاالله (which has a pending draft) showed
+no card, no empty bar, no pill. Cause: `rwPoll` returned early while `document.hidden`,
+including the very first poll, and nothing renders before the first runway answer.
+The MCP tab on fm3 reported `visibilityState: "hidden"` even with a screenshot taken, and
+HQ logs showed fm3 calling `/api/runway` once in 40 min against `/api/workers` every
+10 s. Fix: drop the hidden gate (the read is cheap). Harness stub forces hidden=true;
+the old code renders 0 cards there, the fix renders all of them.

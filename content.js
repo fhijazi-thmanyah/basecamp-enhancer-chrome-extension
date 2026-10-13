@@ -1486,8 +1486,14 @@
   const rwAcct = () => (location.pathname.match(/^\/(\d+)\//) || [])[1] || "";
   const rwUrl = (d) => rwTargetUrl(d, location.origin, rwAcct());
 
+  // No document.hidden gate (v1.25.1). It used to skip every poll while the tab
+  // was hidden, INCLUDING the first one, and rwLoaded gates all rendering — so
+  // a tab Chrome reports as hidden (background tab, another Space, an occluded
+  // window, the MCP automation window) never rendered a card, an empty bar or
+  // the pill, while the launcher kept polling /api/workers every 10 s. HQ logs
+  // showed fm3 hitting /api/runway once in 40 min. /api/runway is a cheap read.
   function rwPoll() {
-    if (!rwOn() || document.hidden) return;
+    if (!rwOn()) return;
     hqSend({ type: "hqRunway" }).then((r) => {
       rwLoaded = true;
       rwError = r.ok ? "" : String(r.error || "HQ error");

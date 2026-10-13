@@ -1,3 +1,6 @@
+// Chrome reports background/occluded tabs as hidden; the runway must still render (v1.25.1)
+Object.defineProperty(document, "hidden", { get: () => true });
+Object.defineProperty(document, "visibilityState", { get: () => "hidden" });
 window.__log = [];
 const drafts = [
   { file: "a.md", kind: "comment", target: "https://app.basecamp.com/4149173/buckets/1/messages/222#__recording_333", project: null, age: "2h",
