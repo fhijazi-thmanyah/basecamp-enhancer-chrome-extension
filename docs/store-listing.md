@@ -81,7 +81,10 @@ app.basecamp.com and 3.basecamp.com: this is where the extension does its work. 
 http://127.0.0.1:8377 and http://localhost:8377: for an optional companion feature that is off by default and hidden unless enabled for the account. It talks to a small server the user installs and runs on their own computer to start a local automation agent for the Basecamp conversation they are reading. These requests never leave the user's machine, and only the extension's service worker makes them — the local server has no authentication, so it must not be reachable from web page code.
 ```
 
-No new host permission for GitHub: `api.github.com` answers CORS for any origin, so the service worker's `fetch` needs none (verified in `tests/ghstatus_test.mjs` live mode, and why v1.26.0 didn't trigger a permission re-prompt).
+`https://github.com/*` (v1.26.1) — add to the host-permission justification field:
+```
+github.com: for the "GitHub link status" feature. For each GitHub pull-request or issue link on the Basecamp page, the service worker requests that item's small public hovercard from github.com (with the user's existing github.com sign-in, so private repos they can see work) to read whether it is open, draft, merged or closed, and shows a matching icon next to the link. Only the link URLs are requested; nothing from Basecamp is sent to GitHub.
+```
 
 **Remote code:** answer **"No, I am not using remote code"** — the dashboard still
 requires a justification:

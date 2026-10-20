@@ -29,9 +29,9 @@ Analytics are sent to `https://posthog.fhijazi.com`, a reverse proxy operated by
 
 Neither is transmitted to the developer.
 
-### GitHub link status (does nothing until you paste a token)
+### GitHub link status
 
-If you paste a GitHub token into the popup, it is stored in `chrome.storage.local` on your machine only (never synced, never sent to the developer). The extension then sends that token plus the **URLs of the GitHub pull-request/issue links on the Basecamp page you are viewing** to GitHub's own API (`api.github.com`) to read whether each one is open, draft, merged or closed. Nothing else on the page is sent, and nothing goes to the developer. Delete the token from the popup to stop it.
+For each GitHub pull-request/issue link on the Basecamp page you are viewing, the extension requests that item's status from **github.com itself**, using your existing github.com sign-in in this browser, to show whether it is open, draft, merged or closed. If you paste an optional GitHub token into the popup, it is stored in `chrome.storage.local` on your machine only (never synced, never sent to the developer) and the lookup goes to GitHub's API (`api.github.com`) instead. Nothing else on the page is sent, and nothing goes to the developer. Delete the token from the popup to stop it.
 
 ### Claude Code launcher (hidden and disabled for almost everyone)
 

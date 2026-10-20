@@ -33,9 +33,9 @@ const C = await load(
 const b = grabber("background.js");
 const B = await load(
   "let store = {}; globalThis.chrome = { storage: { local: { get: async (d) => ({ ...d, ...store }) } } };\n" +
-  b("const GH_TTL =", "new Map(); // url") + "\n" +
+  b("const GH_TTL =", "\nasync function ghStatus(").replace(/\nasync function ghStatus\($/, "") + "\n" +
   b("async function ghStatus(", "\n}") + "\n" +
-  "export { ghStatus, ghCache }; export const setStore = (s) => { store = s; };");
+  "export { ghStatus, ghCache, ghParseHovercard }; export const setStore = (s) => { store = s; };");
 
 let failures = 0;
 const eq = (name, got, want) => {
@@ -77,14 +77,36 @@ eq("no access", C.ghView(null), null);
 // --- background batching (stubbed fetch)
 const realFetch = globalThis.fetch;
 const calls = [];
-globalThis.fetch = async (url, init) => {
+const gqlFetch = async (url, init) => {
   calls.push(JSON.parse(init.body).query);
   const aliases = [...JSON.parse(init.body).query.matchAll(/(r\d+):resource/g)].map((m) => m[1]);
   return { ok: true, json: async () => ({ data: Object.fromEntries(aliases.map((a) => [a, a === "r1" ? null : { __typename: "PullRequest", state: "OPEN" }])) }) };
 };
 B.setStore({});
-eq("no token", await B.ghStatus({ urls: [`${R}/pull/1`] }), { ok: false, error: "no-token" });
+// --- no token: github.com hovercards with the user's session (markup copied from real responses)
+const card = (cls, icon) => `<a class="Link--secondary">acme/app</a><span data-view-component="true" class="${cls}">\n  <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" class="octicon octicon-${icon} mr-1">`;
+eq("hc merged", B.ghParseHovercard(card("State State--merged State--small", "git-merge")), { __typename: "PullRequest", state: "MERGED" });
+eq("hc draft", B.ghParseHovercard(card("State State--draft State--small", "git-pull-request-draft")).isDraft, true);
+eq("hc not planned", B.ghParseHovercard(card("State State--small d-flex flex-items-center", "skip")).stateReason, "NOT_PLANNED");
+eq("hc other svg first is ignored", B.ghParseHovercard('<svg class="octicon octicon-repo">' + card("State", "issue-opened")).state, "OPEN");
+eq("hc garbage", B.ghParseHovercard("<html>login</html>"), null);
+const hcCalls = [];
+globalThis.fetch = async (url, init) => {
+  hcCalls.push([url, init.headers["X-Requested-With"], init.credentials]);
+  if (url.includes("/pull/404/")) return { ok: false, status: 404 };
+  return { ok: true, text: async () => card("State State--merged", "git-merge") };
+};
+B.setStore({});
+const hc = await B.ghStatus({ urls: [`${R}/pull/5`, `${R}/pull/404`] });
+eq("hc request shape", hcCalls[0], [`${R}/pull/5/hovercard`, "XMLHttpRequest", "include"]);
+eq("hc merged via session", hc.statuses[`${R}/pull/5`].state, "MERGED");
+eq("hc 404 -> null", hc.statuses[`${R}/pull/404`], null);
+globalThis.fetch = async () => { throw new TypeError("Failed to fetch"); };
+eq("hc network down -> not ok", (await B.ghStatus({ urls: [`${R}/pull/6`] })).ok, false);
+eq("hc network down not cached", B.ghCache.has(`${R}/pull/6`), false);
 B.setStore({ ghToken: "t" });
+B.ghCache.clear();
+globalThis.fetch = gqlFetch;
 const urls = Array.from({ length: 60 }, (_, i) => `${R}/pull/${i}`);
 const r = await B.ghStatus({ urls: [...urls, urls[0], "https://evil.example/pull/1"] });
 eq("60 urls = 2 requests", calls.length, 2);

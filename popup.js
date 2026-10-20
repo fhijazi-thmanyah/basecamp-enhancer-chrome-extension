@@ -171,7 +171,7 @@ document.getElementById("resetMenu").addEventListener("click", () => {
 const ghEditor = document.getElementById("ghEditor");
 const ghInput = document.getElementById("ghToken");
 function ghShowSet(has) {
-  document.getElementById("ghSummary").textContent = has ? "GitHub token ✓ set" : "GitHub token — not set, icons stay off";
+  document.getElementById("ghSummary").textContent = has ? "GitHub token ✓ set" : "GitHub token (optional — uses your github.com login)";
 }
 chrome.storage.local.get({ ghToken: "" }, ({ ghToken }) => { ghInput.value = ghToken || ""; ghShowSet(!!ghToken); });
 ghInput.addEventListener("change", () => {

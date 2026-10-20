@@ -153,13 +153,14 @@
     </label>
 
     <details class="subrow" id="ghEditor">
-      <summary id="ghSummary">GitHub token</summary>
+      <summary id="ghSummary">GitHub token (optional)</summary>
       <div>
         <input id="ghToken" type="password" spellcheck="false" autocomplete="off"
                placeholder="ghp_… or github_pat_…"
                style="width:100%;box-sizing:border-box;font-family:monospace;font-size:12px" />
         <div style="opacity:.7;font-size:11px;margin-top:3px">
-          Read-only access to your repos (classic: <code>repo</code> scope). Stays in this browser,
+          Not needed if you're signed in to github.com in this browser. A token
+          (classic: <code>repo</code> scope) also shows archived repos. Stays in this browser,
           sent only to api.github.com.
           <a href="https://github.com/settings/tokens/new?scopes=repo&amp;description=Basecamp%20Enhancer%20link%20status" target="_blank">Create one</a>
         </div>

@@ -37,10 +37,13 @@ async function hqCall(path, init) {
   return Object.assign({ ok: true }, data);
 }
 
-// GitHub link status: one GraphQL request resolves a whole batch of PR/issue
-// URLs (`resource(url:)` aliases). The token lives in chrome.storage.local and
-// never leaves this worker — content.js only sends URLs and gets states back.
-// No host permission needed: api.github.com answers CORS for any origin.
+// GitHub link status. Default path needs NO setup: GitHub's own hovercard
+// endpoint (`<pr-or-issue-url>/hovercard`, ~4 KB, needs X-Requested-With)
+// fetched with the user's github.com session cookies — which is why
+// https://github.com/* is a host permission. If the user pasted a token
+// (chrome.storage.local.ghToken) we use one GraphQL request per batch instead
+// (`resource(url:)` aliases; also tells us if the repo is archived — the
+// hovercard doesn't). Either way content.js only sends URLs and gets nodes back.
 // Results are cached per URL for GH_TTL so many tabs/sweeps cost one request.
 const GH_TTL = 5 * 60 * 1000;
 const GH_BATCH = 50;
@@ -48,12 +51,47 @@ const GH_FIELDS = "__typename ... on PullRequest{state isDraft title repository{
   + " ... on Issue{state stateReason title repository{isArchived}}";
 const ghCache = new Map(); // url -> {t, v}: v = GraphQL node, or null (missing / no access)
 
+// hovercard state octicon -> the same node shape GraphQL returns
+const GH_OCTICON = {
+  "git-merge": { __typename: "PullRequest", state: "MERGED" },
+  "git-pull-request": { __typename: "PullRequest", state: "OPEN" },
+  "git-pull-request-draft": { __typename: "PullRequest", state: "OPEN", isDraft: true },
+  "git-pull-request-closed": { __typename: "PullRequest", state: "CLOSED" },
+  "issue-opened": { __typename: "Issue", state: "OPEN" },
+  "issue-draft": { __typename: "Issue", state: "OPEN" },
+  "issue-closed": { __typename: "Issue", state: "CLOSED", stateReason: "COMPLETED" },
+  "skip": { __typename: "Issue", state: "CLOSED", stateReason: "NOT_PLANNED" },
+};
+
+// The state badge is the first `class="State …"` element; its svg names the state.
+function ghParseHovercard(html) {
+  const m = html.match(/class="State\b[^"]*"[^>]*>\s*<svg[^>]*class="octicon octicon-([a-z-]+)/);
+  return (m && GH_OCTICON[m[1]]) || null;
+}
+
+async function ghHovercard(url) {
+  try {
+    const res = await fetch(url + "/hovercard", { credentials: "include", headers: { "X-Requested-With": "XMLHttpRequest" } });
+    return res.ok ? ghParseHovercard(await res.text()) : null; // 404 = no access / gone
+  } catch (e) {
+    return undefined; // network: don't cache
+  }
+}
+
 async function ghStatus(msg) {
   const { ghToken } = await chrome.storage.local.get({ ghToken: "" });
-  if (!ghToken) return { ok: false, error: "no-token" };
   const now = Date.now();
   const urls = [...new Set(msg.urls || [])].filter((u) => /^https:\/\/github\.com\//.test(u));
   const miss = urls.filter((u) => !(ghCache.get(u)?.t > now - GH_TTL));
+  if (!ghToken) {
+    for (let i = 0; i < miss.length; i += 6) { // a few at a time, not a burst
+      const chunk = miss.slice(i, i + 6);
+      const vs = await Promise.all(chunk.map(ghHovercard));
+      chunk.forEach((u, j) => { if (vs[j] !== undefined) ghCache.set(u, { t: now, v: vs[j] }); });
+    }
+    if (miss.some((u) => !ghCache.has(u))) return { ok: false, error: "github.com unreachable" };
+    return { ok: true, statuses: Object.fromEntries(urls.map((u) => [u, ghCache.get(u).v])) };
+  }
   for (let i = 0; i < miss.length; i += GH_BATCH) {
     const chunk = miss.slice(i, i + GH_BATCH);
     const query = `query{${chunk.map((u, j) => `r${j}:resource(url:${JSON.stringify(u)}){${GH_FIELDS}}`).join(" ")}}`;

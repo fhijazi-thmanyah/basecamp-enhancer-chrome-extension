@@ -14,3 +14,6 @@
 - NOT yet tested in the real Basecamp tab — needs an unpacked-extension reload + token paste.
 
 **Gotcha found:** popup stubs call `storage.get` callbacks synchronously, so any top-level `const` referenced inside the `sync.get(DEFAULTS…)` callback must be declared above it (TDZ) — the token block is placed before that call for this reason.
+
+## v1.26.1 — no token needed
+User reloaded, saw nothing (no token pasted) and wanted zero labor. Default path is now GitHub's hovercard endpoint with the user's github.com cookies (`https://github.com/*` host permission). Verified in the user's Chrome on github.com: `/hovercard` returns 406 without `X-Requested-With`, 200 (~4 KB) with it; the state-badge regex returned the right octicon for merged / open / draft / not-planned / completed and an `/issues/N` URL that is really a PR. Token stays as an optional upgrade (archived icon). NOT yet verified: cookies actually riding the service-worker fetch in the real extension (needs a reload on the Mac).
