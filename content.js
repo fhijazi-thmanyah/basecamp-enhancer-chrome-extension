@@ -62,6 +62,7 @@
     fullWidth: false, // widen Basecamp's centered middle column to the full screen
     ccLaunch: true,
     runway: true, // suggested replies from the HQ runway (same launcher gate)
+    ghStatus: true, // GitHub PR/issue state icons on github.com links (needs a token)
     telemetry: true,
     reactionEmojis: DEFAULT_EMOJIS,
     menuItems: DEFAULT_MENU_ITEMS,
@@ -1854,6 +1855,106 @@
     document.querySelectorAll(".bce-rw-replyto").forEach((n) => n.classList.remove("bce-rw-replyto"));
   }
 
+  // ---- Feature: GitHub link status --------------------------------------
+  // A tiny octicon at the start of every github.com PR/issue link saying
+  // whether it's open / draft / merged / closed (+ an archive icon when the
+  // repo is archived). background.js owns the token and the GraphQL call; we
+  // only send canonical URLs. Nothing renders until the answer arrives — no
+  // placeholder "open" icon that might be wrong — and a link we can't see
+  // (no token, no access, 404) simply gets no icon.
+  const GH_LINK_RE = /^https:\/\/github\.com\/([\w.-]+\/[\w.-]+)\/(pull|issues)\/(\d+)/;
+  const GH_REFRESH_MS = 5 * 60 * 1000; // matches background.js GH_TTL
+  // Octicons (MIT, @primer/octicons 19.15.1), 16px paths
+  const GH_ICONS = {
+    pr: '<path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"/>',
+    prDraft: '<path d="M3.25 1A2.25 2.25 0 0 1 4 5.372v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.251 2.251 0 0 1 3.25 1Zm9.5 14a2.25 2.25 0 1 1 0-4.5 2.25 2.25 0 0 1 0 4.5ZM2.5 3.25a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0ZM3.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm9.5 0a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5ZM14 7.5a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Zm0-4.25a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Z"/>',
+    prClosed: '<path d="M3.25 1A2.25 2.25 0 0 1 4 5.372v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.251 2.251 0 0 1 3.25 1Zm9.5 5.5a.75.75 0 0 1 .75.75v3.378a2.251 2.251 0 1 1-1.5 0V7.25a.75.75 0 0 1 .75-.75Zm-2.03-5.273a.75.75 0 0 1 1.06 0l.97.97.97-.97a.748.748 0 0 1 1.265.332.75.75 0 0 1-.205.729l-.97.97.97.97a.751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018l-.97-.97-.97.97a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734l.97-.97-.97-.97a.75.75 0 0 1 0-1.06ZM2.5 3.25a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0ZM3.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm9.5 0a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z"/>',
+    merged: '<path d="M5.45 5.154A4.25 4.25 0 0 0 9.25 7.5h1.378a2.251 2.251 0 1 1 0 1.5H9.25A5.734 5.734 0 0 1 5 7.123v3.505a2.25 2.25 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.95-.218ZM4.25 13.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm8.5-4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM5 3.25a.75.75 0 1 0 0 .005V3.25Z"/>',
+    issue: '<path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"/>',
+    issueDone: '<path d="M11.28 6.78a.75.75 0 0 0-1.06-1.06L7.25 8.69 5.78 7.22a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l3.5-3.5Z"/><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0Zm-1.5 0a6.5 6.5 0 1 0-13 0 6.5 6.5 0 0 0 13 0Z"/>',
+    skip: '<path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm9.78-2.22-5.5 5.5a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734l5.5-5.5a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042Z"/>',
+    archive: '<path d="M0 2.75C0 1.784.784 1 1.75 1h12.5c.966 0 1.75.784 1.75 1.75v1.5A1.75 1.75 0 0 1 14.25 6H1.75A1.75 1.75 0 0 1 0 4.25ZM1.75 7a.75.75 0 0 1 .75.75v5.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-5.5a.75.75 0 0 1 1.5 0v5.5A1.75 1.75 0 0 1 13.25 15H2.75A1.75 1.75 0 0 1 1 13.25v-5.5A.75.75 0 0 1 1.75 7Zm0-4.5a.25.25 0 0 0-.25.25v1.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25v-1.5a.25.25 0 0 0-.25-.25ZM6.25 8h3.5a.75.75 0 0 1 0 1.5h-3.5a.75.75 0 0 1 0-1.5Z"/>',
+  };
+  // canonical url -> view | null (answered: nothing to show) | undefined (lookup failed: keep what's drawn)
+  const ghCache = new Map();
+  const ghPending = new Set();
+  let ghTimer = 0;
+
+  function ghUrl(a) {
+    const m = a.href.match(GH_LINK_RE);
+    return m && `https://github.com/${m[1]}/${m[2]}/${m[3]}`;
+  }
+
+  // GraphQL node -> what to draw. Pure, so it's unit-testable.
+  function ghView(n) {
+    if (!n || !n.state) return null;
+    const pr = n.__typename === "PullRequest";
+    let key, icon, label;
+    if (pr && n.state === "MERGED") [key, icon, label] = ["merged", "merged", "PR merged"];
+    else if (pr && n.state === "CLOSED") [key, icon, label] = ["closed", "prClosed", "PR closed"];
+    else if (pr && n.isDraft) [key, icon, label] = ["draft", "prDraft", "Draft PR"];
+    else if (pr) [key, icon, label] = ["open", "pr", "PR open"];
+    else if (n.state === "OPEN") [key, icon, label] = ["open", "issue", "Issue open"];
+    else if (n.stateReason === "NOT_PLANNED" || n.stateReason === "DUPLICATE")
+      [key, icon, label] = ["skip", "skip", n.stateReason === "DUPLICATE" ? "Issue closed as duplicate" : "Issue closed as not planned"];
+    else [key, icon, label] = ["merged", "issueDone", "Issue completed"];
+    const archived = !!(n.repository && n.repository.isArchived);
+    return { key: key + (archived ? "+a" : ""), state: key, icon, label: label + (archived ? " · repo archived" : "") + (n.title ? ` — ${n.title}` : ""), archived };
+  }
+
+  function ghSvg(name) {
+    return `<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true">${GH_ICONS[name]}</svg>`;
+  }
+
+  // Idempotent: keeps an existing badge whose state key still matches.
+  function ghBadge(a, v) {
+    const have = a.querySelector(":scope > .bce-gh");
+    if (have && v && have.dataset.k === v.key) return;
+    if (have) have.remove();
+    if (!v) return;
+    const s = document.createElement("span");
+    s.className = "bce-gh";
+    s.dataset.k = v.key;
+    s.dataset.state = v.state;
+    s.title = v.label;
+    s.innerHTML = ghSvg(v.icon) + (v.archived ? `<span class="bce-gh__arch">${ghSvg("archive")}</span>` : "");
+    a.prepend(s);
+  }
+
+  function applyGhStatus(root = document) {
+    const links = root.nodeType === 1 && root.matches("a[href]") ? [root] : root.querySelectorAll('a[href^="https://github.com/"]');
+    const want = [];
+    for (const a of links) {
+      if (a.closest(RTL_EDITABLE_SEL)) continue; // never write into a composer/editor
+      const url = ghUrl(a);
+      if (!url) continue;
+      if (ghCache.has(url)) { const v = ghCache.get(url); if (v !== undefined) ghBadge(a, v); }
+      else if (!ghPending.has(url)) { ghPending.add(url); want.push(url); }
+    }
+    if (want.length) ghFetch(want);
+  }
+
+  async function ghFetch(urls) {
+    const r = await hqSend({ type: "ghStatus", urls });
+    // a failed lookup (no token, network) is cached as `undefined` so the
+    // observer doesn't re-ask on every flush, and a blip during the periodic
+    // refresh doesn't strip icons already drawn; refresh/token change re-asks
+    for (const u of urls) {
+      ghPending.delete(u);
+      ghCache.set(u, r && r.ok ? ghView(r.statuses[u]) : undefined);
+    }
+    if (settings.ghStatus) applyGhStatus();
+  }
+
+  function ghRefresh() {
+    ghCache.clear();
+    if (settings.ghStatus) applyGhStatus();
+  }
+
+  function removeGhStatus() {
+    document.querySelectorAll(".bce-gh").forEach((n) => n.remove());
+  }
+
   // ---- Wiring -----------------------------------------------------------
 
   // Our own injected DOM. Never re-enhance it: decorating a badge or a lifted
@@ -1861,7 +1962,7 @@
   // sees, re-entering them is how a feedback loop starts. (`.bce-anchor` is
   // deliberately NOT here — that class sits on Basecamp's own bubble, whose
   // contents do need enhancing.)
-  const OURS_SEL = ".bce-ago,.bce-reactions,.bce-hoverbar,.bce-cc-btn,.bce-ccpop,.bce-rw,.bce-rw-slot,.bce-rwfab,.bce-rwpanel";
+  const OURS_SEL = ".bce-ago,.bce-reactions,.bce-hoverbar,.bce-cc-btn,.bce-ccpop,.bce-rw,.bce-rw-slot,.bce-rwfab,.bce-rwpanel,.bce-gh";
 
   // Enhance a freshly added subtree, honoring current settings. Subtree-local
   // work only — see enhance() for the page-global part.
@@ -1875,6 +1976,7 @@
     if (settings.bcFont) applyFont(); // global attribute — cheap no-op when set
     if (settings.inlineReactions) applyInlineReactions(root); // standalone boost bars
     if (settings.inlineReactions || settings.inlineMenus) applyHoverBars(root); // records
+    if (settings.ghStatus) applyGhStatus(root);
   }
 
   function enhance(root = document) {
@@ -1936,6 +2038,7 @@
     // turbo:* → reconcile listeners bring them right back.
     if (ccFlags.launcher && settings.ccLaunch) applyCcLaunchers(); else removeCcLaunchers();
     applyRunway(); // gates itself on rwOn()
+    if (settings.ghStatus) applyGhStatus(); else removeGhStatus();
   }
 
   // Run as early as possible (document_start): the observer below catches most
@@ -1965,6 +2068,7 @@
     if (area === "sync" && changes.hqBase) {
       hqBase = String(changes.hqBase.newValue || HQ_FALLBACK);
     }
+    if (area === "local" && changes.ghToken) { removeGhStatus(); ghRefresh(); } // new token ⇒ new visibility
     if (area !== "sync") return;
     for (const key in changes) settings[key] = changes[key].newValue;
     reconcile();
@@ -2049,6 +2153,7 @@
     clearInterval(ccBusyTimer);
     clearInterval(ccPollTimer);
     clearInterval(rwTimer);
+    clearInterval(ghTimer);
   }
 
   // Turbo re-renders (cable-stream updates, morph refreshes, frame loads) can
@@ -2070,5 +2175,8 @@
   window.addEventListener("load", () => enhance(), { once: true });
 
   // Keep relative labels fresh (e.g. "1 minute ago" -> "2 minutes ago").
+  // PR/issue states change while a Basecamp tab sits open for days
+  ghTimer = setInterval(ghRefresh, GH_REFRESH_MS);
+
   const labelTimer = setInterval(() => { if (settings.timeLabels) decorateAllTimes(); }, 60 * 1000);
 })();

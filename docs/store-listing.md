@@ -23,7 +23,7 @@ searchable in the store).
 **Description** (paste as-is):
 
 ```
-Basecamp Enhancer adds six small quality-of-life features to the Basecamp web app. Each one is an independent toggle in the extension popup, applies instantly to open tabs, and turning them all off leaves Basecamp exactly as it was.
+Basecamp Enhancer adds seven small quality-of-life features to the Basecamp web app. Each one is an independent toggle in the extension popup, applies instantly to open tabs, and turning them all off leaves Basecamp exactly as it was.
 
 • Relative timestamps — every date gets a "(6 days ago)" label next to it, so you can tell at a glance how old a message or todo is.
 
@@ -34,6 +34,8 @@ Basecamp Enhancer adds six small quality-of-life features to the Basecamp web ap
 • Hover action bar — a Google-Chat-style bar appears above a message on hover with your reaction emoji plus the whole action menu (reply, edit, bookmark, copy link, delete…), so common actions are one click instead of three. You can hide and reorder the menu items.
 
 • Font picker — switch Basecamp's typeface to IBM Plex Sans Arabic (bundled) or one of three other bundled families, for readable Arabic.
+
+• GitHub link status — with a GitHub token pasted in the popup, every GitHub pull-request or issue link in Basecamp gets a small icon showing whether it is open, draft, merged or closed (and whether its repo is archived). The token stays in your browser and is sent only to api.github.com.
 
 • Usage analytics toggle — analytics and error reporting are on by default and can be switched off in one click. See the privacy policy for exactly what is collected.
 
@@ -62,7 +64,7 @@ message content. Never upload a screenshot with real Basecamp content in it.
 **Single purpose** (paste):
 
 ```
-Basecamp Enhancer has one purpose: improving the usability of the Basecamp web app for the signed-in user. Every feature is a UI enhancement rendered on top of Basecamp pages — relative-time labels, right-to-left layout for Arabic, quick emoji reactions, a hover action bar that reuses Basecamp's own action menu, and a font picker. The extension runs only on Basecamp domains and does nothing on any other site.
+Basecamp Enhancer has one purpose: improving the usability of the Basecamp web app for the signed-in user. Every feature is a UI enhancement rendered on top of Basecamp pages — relative-time labels, right-to-left layout for Arabic, quick emoji reactions, a hover action bar that reuses Basecamp's own action menu, a font picker, and status icons on GitHub links. The extension runs only on Basecamp domains and does nothing on any other site.
 ```
 
 **Permission justifications** (one field each; paste verbatim):
@@ -79,6 +81,8 @@ app.basecamp.com and 3.basecamp.com: this is where the extension does its work. 
 http://127.0.0.1:8377 and http://localhost:8377: for an optional companion feature that is off by default and hidden unless enabled for the account. It talks to a small server the user installs and runs on their own computer to start a local automation agent for the Basecamp conversation they are reading. These requests never leave the user's machine, and only the extension's service worker makes them — the local server has no authentication, so it must not be reachable from web page code.
 ```
 
+No new host permission for GitHub: `api.github.com` answers CORS for any origin, so the service worker's `fetch` needs none (verified in `tests/ghstatus_test.mjs` live mode, and why v1.26.0 didn't trigger a permission re-prompt).
+
 **Remote code:** answer **"No, I am not using remote code"** — the dashboard still
 requires a justification:
 
@@ -93,7 +97,7 @@ the "Usage analytics" toggle on; it is one click to turn off):
 - [x] **Personal communications** — session replays of Basecamp pages can include the chat and message text on screen.
 - [x] **User activity** — page views, clicks, dead clicks and heatmap data on Basecamp pages.
 - [x] **Website content** — session replay records the rendered Basecamp page.
-- [ ] Health · Financial and payment · Authentication information · Location · Web history — none collected.
+- [ ] Health · Financial and payment · Authentication information · Location · Web history — none collected. (The optional GitHub token is user-supplied, kept in `chrome.storage.local`, and sent only to api.github.com — never to the developer, so it is not "collected".)
 
 **Certifications** (all three are true and must be ticked):
 

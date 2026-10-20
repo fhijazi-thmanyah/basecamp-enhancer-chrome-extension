@@ -1,0 +1,27 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="/ext/styles.css">
+<script src="/stub.js"></script><script src="/ext/content.js"></script></head>
+<body style="font:15px/1.8 sans-serif;padding:16px;background:#fff">
+<div class="formatted_content" id="msg">
+  <div><a href="https://github.com/acme/app/pull/1">https://github.com/acme/app/pull/1</a> open PR</div>
+  <div><a href="https://github.com/acme/app/pull/2/files">acme/app#2</a> draft PR (files tab link)</div>
+  <div><a href="https://github.com/acme/app/pull/3">https://github.com/acme/app/pull/3</a> merged PR</div>
+  <div><a href="https://github.com/acme/app/pull/4">https://github.com/acme/app/pull/4</a> closed PR</div>
+  <div><a href="https://github.com/acme/app/issues/5">https://github.com/acme/app/issues/5</a> open issue</div>
+  <div><a href="https://github.com/acme/app/issues/6#issuecomment-1">https://github.com/acme/app/issues/6</a> completed issue</div>
+  <div><a href="https://github.com/acme/app/issues/7">https://github.com/acme/app/issues/7</a> not-planned issue</div>
+  <div><a href="https://github.com/acme/old/pull/8">https://github.com/acme/old/pull/8</a> merged PR, archived repo</div>
+  <div dir="rtl">رابط <a href="https://github.com/acme/app/pull/3">acme/app#3</a> داخل نص عربي</div>
+  <div><a href="https://github.com/acme/app/pull/99">https://github.com/acme/app/pull/99</a> no access → no icon</div>
+  <div><a href="https://github.com/acme/app/pulls">https://github.com/acme/app/pulls</a> list link → no icon</div>
+</div>
+<div contenteditable="true"><a href="https://github.com/acme/app/pull/1">in a composer → no icon</a></div>
+<pre id="out"></pre>
+<script>
+setTimeout(() => {
+  const icons = [...document.querySelectorAll(".bce-gh")].map((s) => s.dataset.k + "|" + s.title.split(" — ")[0]);
+  // a second sweep must not duplicate badges (idempotency)
+  document.getElementById("out").textContent = "ICONS=" + icons.length + "\n" + icons.join("\n") +
+    "\nDUP=" + [...document.querySelectorAll("a")].some((a) => a.querySelectorAll(".bce-gh").length > 1) + "\nDONE=true";
+}, 1500);
+</script></body></html>

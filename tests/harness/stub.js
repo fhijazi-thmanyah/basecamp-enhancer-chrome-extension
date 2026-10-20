@@ -18,6 +18,14 @@ window.chrome = {
     sendMessage: async (msg) => {
       window.__log.push(msg);
       if (msg.type === "hqRunway") return { ok: true, runway: drafts };
+      if (msg.type === "ghStatus") {
+        // one fixture per state the GitHub-link-status icon can show (keyed by PR/issue number)
+        const N = (n) => ({ __typename: n.t || "PullRequest", isDraft: false, stateReason: null, title: "fixture", repository: { isArchived: false }, ...n });
+        const fx = { 1: N({ state: "OPEN" }), 2: N({ state: "OPEN", isDraft: true }), 3: N({ state: "MERGED" }), 4: N({ state: "CLOSED" }),
+          5: N({ t: "Issue", state: "OPEN" }), 6: N({ t: "Issue", state: "CLOSED", stateReason: "COMPLETED" }),
+          7: N({ t: "Issue", state: "CLOSED", stateReason: "NOT_PLANNED" }), 8: N({ state: "MERGED", repository: { isArchived: true } }) };
+        return { ok: true, statuses: Object.fromEntries(msg.urls.map((u) => [u, fx[u.split("/").pop()] || null])) };
+      }
       if (msg.type === "hqDraft") {
         // HQ's worker "parks" a draft for this thread a moment later
         setTimeout(() => drafts.push({ file: "d.md", kind: "comment", target: "https://app.basecamp.com/4149173/buckets/1/messages/222", project: null, age: "0m", body: "مسودة جديدة" }), 1000);

@@ -144,6 +144,28 @@
       </select>
     </label>
 
+    <label class="row" for="ghStatus">
+      <span class="label">GitHub link status<small>open / draft / merged / closed icon on PR &amp; issue links</small></span>
+      <span class="switch">
+        <input type="checkbox" id="ghStatus" />
+        <span class="slider"></span>
+      </span>
+    </label>
+
+    <details class="subrow" id="ghEditor">
+      <summary id="ghSummary">GitHub token</summary>
+      <div>
+        <input id="ghToken" type="password" spellcheck="false" autocomplete="off"
+               placeholder="ghp_… or github_pat_…"
+               style="width:100%;box-sizing:border-box;font-family:monospace;font-size:12px" />
+        <div style="opacity:.7;font-size:11px;margin-top:3px">
+          Read-only access to your repos (classic: <code>repo</code> scope). Stays in this browser,
+          sent only to api.github.com.
+          <a href="https://github.com/settings/tokens/new?scopes=repo&amp;description=Basecamp%20Enhancer%20link%20status" target="_blank">Create one</a>
+        </div>
+      </div>
+    </details>
+
     <label class="row" for="inlineReactions">
       <span class="label">Inline reactions<small>one-click emoji, no “…” menu</small></span>
       <span class="switch">

@@ -37,7 +37,46 @@ async function hqCall(path, init) {
   return Object.assign({ ok: true }, data);
 }
 
+// GitHub link status: one GraphQL request resolves a whole batch of PR/issue
+// URLs (`resource(url:)` aliases). The token lives in chrome.storage.local and
+// never leaves this worker — content.js only sends URLs and gets states back.
+// No host permission needed: api.github.com answers CORS for any origin.
+// Results are cached per URL for GH_TTL so many tabs/sweeps cost one request.
+const GH_TTL = 5 * 60 * 1000;
+const GH_BATCH = 50;
+const GH_FIELDS = "__typename ... on PullRequest{state isDraft title repository{isArchived}}"
+  + " ... on Issue{state stateReason title repository{isArchived}}";
+const ghCache = new Map(); // url -> {t, v}: v = GraphQL node, or null (missing / no access)
+
+async function ghStatus(msg) {
+  const { ghToken } = await chrome.storage.local.get({ ghToken: "" });
+  if (!ghToken) return { ok: false, error: "no-token" };
+  const now = Date.now();
+  const urls = [...new Set(msg.urls || [])].filter((u) => /^https:\/\/github\.com\//.test(u));
+  const miss = urls.filter((u) => !(ghCache.get(u)?.t > now - GH_TTL));
+  for (let i = 0; i < miss.length; i += GH_BATCH) {
+    const chunk = miss.slice(i, i + GH_BATCH);
+    const query = `query{${chunk.map((u, j) => `r${j}:resource(url:${JSON.stringify(u)}){${GH_FIELDS}}`).join(" ")}}`;
+    const res = await fetch("https://api.github.com/graphql", {
+      method: "POST",
+      headers: { Authorization: `bearer ${ghToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ query }),
+    });
+    if (!res.ok) return { ok: false, error: `GitHub HTTP ${res.status}` };
+    const { data } = await res.json();
+    // per-alias errors (no access, SSO not authorized) come back as null nodes
+    chunk.forEach((u, j) => ghCache.set(u, { t: now, v: (data && data[`r${j}`]) || null }));
+  }
+  return { ok: true, statuses: Object.fromEntries(urls.map((u) => [u, ghCache.get(u).v])) };
+}
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && changes.ghToken) ghCache.clear(); // new token ⇒ new visibility
+});
+
 const HANDLERS = {
+  // GitHub PR/issue states for a batch of canonical URLs ({ok, statuses:{url: node|null}})
+  ghStatus,
   // Launch a Claude Code worker: HQ spawns `claude` in a fresh hq-* tmux
   // session and returns {ok, session, title, workdir} synchronously.
   hqSpawn: (msg) => hqCall("/api/workers/action", {

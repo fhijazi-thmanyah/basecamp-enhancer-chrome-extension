@@ -653,3 +653,22 @@ html[data-bce-font] body :not(code, pre, kbd, samp, code *, pre *) {
 }
 .bce-dark .bce-rw-empty { border-color: #4a3f73; color: #a59bc8; }
 .bce-dark .bce-rw-empty__btn, .bce-dark .bce-rw__more { color: #c4b2ff; }
+
+/* GitHub link status (content.js applyGhStatus): an octicon at the start of a
+   github.com PR/issue link, GitHub's own state colors. .bce-dark = the runtime
+   dark-page palette (see syncTheme). */
+.bce-gh {
+  display: inline-flex; gap: 2px; align-items: center;
+  vertical-align: -2px; margin-inline-end: 3px;
+  color: #59636e; text-decoration: none;
+}
+.bce-gh svg { display: block; }
+.bce-gh[data-state="open"] { color: #1a7f37; }
+.bce-gh[data-state="merged"] { color: #8250df; }
+.bce-gh[data-state="closed"] { color: #d1242f; }
+.bce-gh__arch { color: #9a6700; display: inline-flex; }
+.bce-dark .bce-gh { color: #9198a1; }
+.bce-dark .bce-gh[data-state="open"] { color: #3fb950; }
+.bce-dark .bce-gh[data-state="merged"] { color: #a371f7; }
+.bce-dark .bce-gh[data-state="closed"] { color: #f85149; }
+.bce-dark .bce-gh__arch { color: #d29922; }

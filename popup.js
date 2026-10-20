@@ -27,11 +27,12 @@ const DEFAULTS = {
   fullWidth: false,
   ccLaunch: true,
   runway: true,
+  ghStatus: true,
   telemetry: true,
   reactionEmojis: DEFAULT_EMOJIS,
   menuItems: DEFAULT_MENU_ITEMS,
 };
-const TOGGLES = ["timeLabels", "rtl", "fullWidth", "inlineReactions", "inlineMenus", "ccLaunch", "runway", "telemetry"];
+const TOGGLES = ["timeLabels", "rtl", "fullWidth", "inlineReactions", "inlineMenus", "ccLaunch", "runway", "ghStatus", "telemetry"];
 
 // setting_changed telemetry. Sent from HERE because the popup is the single
 // writer of settings — every open tab hears storage.onChanged, so capturing
@@ -164,6 +165,20 @@ document.getElementById("resetMenu").addEventListener("click", () => {
   chrome.storage.sync.set({ menuItems: DEFAULT_MENU_ITEMS });
 });
 
+// GitHub token: chrome.storage.LOCAL (a secret — not synced to other devices);
+// only background.js reads it. The summary says whether one is set, so a
+// missing token isn't a silent "the feature doesn't work".
+const ghEditor = document.getElementById("ghEditor");
+const ghInput = document.getElementById("ghToken");
+function ghShowSet(has) {
+  document.getElementById("ghSummary").textContent = has ? "GitHub token ✓ set" : "GitHub token — not set, icons stay off";
+}
+chrome.storage.local.get({ ghToken: "" }, ({ ghToken }) => { ghInput.value = ghToken || ""; ghShowSet(!!ghToken); });
+ghInput.addEventListener("change", () => {
+  const ghToken = ghInput.value.trim();
+  chrome.storage.local.set({ ghToken }, () => ghShowSet(!!ghToken));
+});
+
 chrome.storage.sync.get(DEFAULTS, (settings) => {
   // personal feature; the launcher row AND its HQ-server editor stay hidden
   // unless the cc-launcher flag is on
@@ -181,7 +196,9 @@ chrome.storage.sync.get(DEFAULTS, (settings) => {
   emojiEditor.classList.toggle("disabled", !settings.inlineReactions);
   renderMenuItems(settings.menuItems && settings.menuItems.length ? settings.menuItems : DEFAULT_MENU_ITEMS);
   menuEditor.classList.toggle("disabled", !settings.inlineMenus);
+  ghEditor.classList.toggle("disabled", !settings.ghStatus);
 });
+
 
 for (const key of TOGGLES) {
   document.getElementById(key).addEventListener("change", (e) => {
@@ -189,6 +206,7 @@ for (const key of TOGGLES) {
     tele(key, e.target.checked);
     if (key === "inlineReactions") emojiEditor.classList.toggle("disabled", !e.target.checked);
     if (key === "inlineMenus") menuEditor.classList.toggle("disabled", !e.target.checked);
+    if (key === "ghStatus") ghEditor.classList.toggle("disabled", !e.target.checked);
   });
 }
 
