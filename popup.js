@@ -241,11 +241,10 @@ document.getElementById("resetEmojis").addEventListener("click", () => {
 // forced. `hqBase` stays the one value background.js and content.js read, so
 // the rest of the extension is unchanged.
 const HQ_DEFAULT = "http://127.0.0.1:8377";
-// The VM's LAN IP is deliberately NOT here: cc-tmux-api binds 127.0.0.1 on
-// that host, so the LAN address could never answer. `thmanyah` is its
-// MagicDNS name, reachable from anywhere on the tailnet via `tailscale
-// serve --http=8377` (which proxies to that same loopback port).
-const HQ_SEED = [HQ_DEFAULT, "http://thmanyah:8377"];
+// Loopback only: this ships to everyone, so no machine names. Other HQs (e.g.
+// a VM over `tailscale serve --http=8377`) are added from the popup and live
+// in the user's own storage.sync list.
+const HQ_SEED = [HQ_DEFAULT];
 
 const hqPick = document.getElementById("hqPick");
 const hqInput = document.getElementById("hqBase");
@@ -259,7 +258,6 @@ const hqOrigin = (u) => new URL(u).origin + "/*";   // throws on a bad URL
 
 function hqNoteFor(url) {
   if (url === HQ_DEFAULT) return "loopback: a local HQ, or an ssh tunnel to one";
-  if (/^https?:\/\/thmanyah(:|\/|$)/.test(url)) return "the VM over tailscale (works off-LAN)";
   return "custom host";
 }
 

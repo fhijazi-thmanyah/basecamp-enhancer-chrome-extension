@@ -17,3 +17,6 @@
 
 ## v1.26.1 — no token needed
 User reloaded, saw nothing (no token pasted) and wanted zero labor. Default path is now GitHub's hovercard endpoint with the user's github.com cookies (`https://github.com/*` host permission). Verified in the user's Chrome on github.com: `/hovercard` returns 406 without `X-Requested-With`, 200 (~4 KB) with it; the state-badge regex returned the right octicon for merged / open / draft / not-planned / completed and an `/issues/N` URL that is really a PR. Token stays as an optional upgrade (archived icon). NOT yet verified: cookies actually riding the service-worker fetch in the real extension (needs a reload on the Mac).
+
+## v1.26.2 — loopback-only HQ seed
+Before the store upload, Faris asked that the default HQ not be `thmanyah:`. The default was already `127.0.0.1:8377` everywhere; the popup also *seeded* `http://thmanyah:8377` into the server dropdown — removed, so the shipped build names no machine.
