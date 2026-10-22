@@ -1,6 +1,7 @@
 *.zip
 .DS_Store
 .vscode/
+.cc/
 .cc-convos/
 dist/
 safari/Basecamp Enhancer/build/
